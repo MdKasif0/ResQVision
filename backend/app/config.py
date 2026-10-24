@@ -24,8 +24,9 @@ class Settings(BaseSettings):
     # Local storage directory
     DATA_DIR: str = "../data"
 
-    # Application Version
+    # Application Version & Mode
     VERSION: str = "0.1.0"
+    DEBUG: bool = True
 
     @property
     def cors_origins_list(self) -> List[str]:
