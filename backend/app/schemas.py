@@ -265,9 +265,17 @@ class ReasonDebugRequest(BaseModel):
 
 
 
-class IncidentListItem(BaseModel):
-    id: str
-    created_at: str
-    urgency_level: str
-    person_count: int
-    summary: str
+class IncidentSummary(BaseModel):
+    id: str = Field(..., description="Unique incident UUIDv4")
+    created_at: str = Field(..., description="ISO 8601 UTC timestamp")
+    origin: str = Field(default="live_analysis", description="Source pipeline ('live_analysis' or 'sample')")
+    severity: str = Field(..., description="Triage priority level")
+    urgency_level: str = Field(..., description="Alias for severity for backwards compatibility")
+    category: Optional[str] = Field(default=None, description="Triage categorization")
+    person_count: int = Field(..., ge=0, description="Number of detected persons")
+    location_label: Optional[str] = Field(default=None, description="Location label / reference if any")
+    summary: Optional[str] = Field(default=None, description="Executive summary")
+
+
+IncidentListItem = IncidentSummary
+
