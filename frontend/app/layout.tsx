@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { AppShell } from "@/components";
 import "./globals.css";
 
 const inter = Inter({
@@ -10,9 +9,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "ResQVision — Incident Triage & Evidentiary Assessment",
+  title: "ResQVision — Disaster Management & Live Incident Map",
   description:
-    "Evidentiary incident triage platform combining deterministic computer vision and structured LLM reasoning.",
+    "Real-time disaster management and emergency incident intelligence platform.",
 };
 
 export default function RootLayout({
@@ -22,8 +21,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={inter.variable}>
-      <body className="bg-[#FAF8F4] text-[#1F1D1A] min-h-screen antialiased">
-        <AppShell>{children}</AppShell>
+      <body className="bg-[#0A0D14] text-white min-h-screen antialiased selection:bg-red-500/30 selection:text-white">
+        {children}
       </body>
     </html>
   );

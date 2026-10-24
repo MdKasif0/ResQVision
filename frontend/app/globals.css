@@ -26,8 +26,8 @@
 @layer base {
   html,
   body {
-    background-color: #FAF8F4;
-    color: #1F1D1A;
+    background-color: #0A0D14;
+    color: #FFFFFF;
     font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

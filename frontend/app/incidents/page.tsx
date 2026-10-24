@@ -77,5 +77,6 @@ export default function IncidentsPage() {
         )}
       </Panel>
     </div>
+    </AppShell>
   );
 }
