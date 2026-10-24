@@ -83,8 +83,9 @@ export interface ApiErrorResponse {
 export interface HealthResponse {
   status: string;
   version: string;
-  yolo_loaded: boolean;
+  model_loaded: boolean;
   groq_configured: boolean;
+  yolo_loaded?: boolean;
 }
 
 export interface DetectResponse {
