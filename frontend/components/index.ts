@@ -6,3 +6,5 @@ export { StatusLine } from "./StatusLine";
 export { EmptyState } from "./EmptyState";
 export { Spinner } from "./Spinner";
 export { BackendStatus } from "./BackendStatus";
+export { ImageOverlay } from "./ImageOverlay";
+

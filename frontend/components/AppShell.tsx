@@ -15,7 +15,9 @@ export function AppShell({ children }: AppShellProps) {
   const navItems = [
     { label: "Analyze", href: "/" },
     { label: "Incidents", href: "/incidents" },
+    { label: "Live Map", href: "/map" },
   ];
+
 
   return (
     <div className="min-h-screen bg-[#FAF8F4] text-[#1F1D1A] flex flex-col font-sans">
