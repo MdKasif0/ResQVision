@@ -123,7 +123,14 @@ export interface DetectResponse {
 export interface IncidentListItem {
   id: string;
   created_at: string;
+  origin: "live_analysis" | "sample" | string;
+  severity: UrgencyLevel;
   urgency_level: UrgencyLevel;
+  category?: string;
   person_count: number;
-  summary: string;
+  location_label?: string | null;
+  summary?: string;
 }
+
+export type IncidentSummary = IncidentListItem;
+

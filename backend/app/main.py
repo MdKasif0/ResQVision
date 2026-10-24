@@ -4,11 +4,11 @@ import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from starlette.concurrency import run_in_threadpool
 
 from app.config import settings
@@ -24,6 +24,7 @@ from app.schemas import (
     ErrorBody,
     HealthResponse,
     Incident,
+    IncidentSummary,
     Location,
     ReasonDebugRequest,
 )
@@ -31,7 +32,14 @@ from app.services.detector import detector
 from app.services.features import compute_scene_features
 from app.services.image_validator import validate_and_process_image
 from app.services.reasoner import assess
-from app.services.store import save_incident
+from app.services.store import (
+    delete_incident,
+    get_incident,
+    get_uploads_dir,
+    list_incidents,
+    save_incident,
+)
+
 
 
 
@@ -247,13 +255,12 @@ async def analyze_endpoint(
 
     # 3. Save processed image under data/uploads/{id}.jpg
     try:
-        base_dir = Path(__file__).resolve().parent.parent.parent
-        uploads_dir = base_dir / "data" / "uploads"
-        uploads_dir.mkdir(parents=True, exist_ok=True)
+        uploads_dir = get_uploads_dir()
         image_save_path = uploads_dir / f"{incident_id}.jpg"
         processed_img.image.save(image_save_path, format="JPEG", quality=90)
     except Exception as exc:
         logger.warning("Could not save uploaded image asset to %s: %s", incident_id, exc)
+
 
     # 4. YOLO person detection
     t_det_start = time.perf_counter()
@@ -346,53 +353,118 @@ if settings.DEBUG:
 
 
 
+def validate_incident_id(incident_id: str) -> str:
+    """Validate that incident_id is a valid UUIDv4 string. Rejects path traversal and malformed IDs."""
+    try:
+        parsed = uuid.UUID(incident_id)
+        return str(parsed)
+    except (ValueError, TypeError, AttributeError):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Incident '{incident_id}' not found. Invalid ID format.",
+        )
+
+
 @app.get(
     "/api/incidents",
+    response_model=List[IncidentSummary],
     tags=["Incidents"],
-    summary="List persisted incidents",
-    responses={501: {"model": ErrorBody}},
+    summary="List persisted incidents (summary records)",
 )
-async def list_incidents_endpoint():
-    """Stubbed incidents list endpoint; returns 501."""
-    raise NotImplementedException(
-        "Incident storage and retrieval service is not implemented yet in this phase."
-    )
+async def list_incidents_endpoint(limit: int = 50, offset: int = 0):
+    """
+    Returns summary list of persisted incidents (newest first):
+    id, created_at, origin, severity, category, person_count, location_label, summary.
+    """
+    all_incidents = list_incidents()
+    summaries: List[IncidentSummary] = []
+    for inc in all_incidents[offset : offset + limit]:
+        loc_label = inc.location.address if inc.location else None
+        summaries.append(
+            IncidentSummary(
+                id=inc.id,
+                created_at=inc.created_at,
+                origin=inc.origin,
+                severity=inc.assessment.urgency_level,
+                urgency_level=inc.assessment.urgency_level,
+                category=inc.assessment.category,
+                person_count=inc.detection_result.person_count,
+                location_label=loc_label,
+                summary=inc.assessment.summary,
+            )
+        )
+    return summaries
 
 
 @app.get(
     "/api/incidents/{incident_id}",
+    response_model=Incident,
     tags=["Incidents"],
     summary="Get single incident by ID",
-    responses={501: {"model": ErrorBody}},
+    responses={404: {"model": ErrorBody}},
 )
 async def get_incident_endpoint(incident_id: str):
-    """Stubbed incident retrieval endpoint; returns 501."""
-    raise NotImplementedException(
-        "Incident storage and retrieval service is not implemented yet in this phase."
-    )
+    """Retrieve full persisted incident by UUID."""
+    valid_id = validate_incident_id(incident_id)
+    incident = get_incident(valid_id)
+    if not incident:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Incident '{incident_id}' not found.",
+        )
+    return incident
 
 
 @app.get(
     "/api/incidents/{incident_id}/image",
     tags=["Incidents"],
     summary="Stream incident image binary",
-    responses={501: {"model": ErrorBody}},
+    responses={404: {"model": ErrorBody}},
 )
 async def get_incident_image_endpoint(incident_id: str):
-    """Stubbed incident image streaming endpoint; returns 501."""
-    raise NotImplementedException(
-        "Incident asset streaming service is not implemented yet in this phase."
+    """
+    Stream uploaded JPEG image asset for the specified incident.
+    Enforces strict UUID validation and path-traversal prevention.
+    """
+    valid_id = validate_incident_id(incident_id)
+    uploads_dir = get_uploads_dir().resolve()
+    img_path = (uploads_dir / f"{valid_id}.jpg").resolve()
+
+    # Path traversal safety check
+    if not str(img_path).startswith(str(uploads_dir)):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Image asset not found.",
+        )
+
+    if not img_path.exists() or not img_path.is_file():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Image asset for incident '{incident_id}' not found.",
+        )
+
+    return FileResponse(
+        path=str(img_path),
+        media_type="image/jpeg",
+        filename=f"{valid_id}.jpg",
     )
 
 
 @app.delete(
     "/api/incidents/{incident_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
     tags=["Incidents"],
     summary="Delete incident by ID",
-    responses={501: {"model": ErrorBody}},
+    responses={404: {"model": ErrorBody}},
 )
 async def delete_incident_endpoint(incident_id: str):
-    """Stubbed incident deletion endpoint; returns 501."""
-    raise NotImplementedException(
-        "Incident deletion service is not implemented yet in this phase."
-    )
+    """Delete an incident record and its associated image asset."""
+    valid_id = validate_incident_id(incident_id)
+    deleted = delete_incident(valid_id)
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Incident '{incident_id}' not found.",
+        )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+

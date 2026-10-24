@@ -1,0 +1,96 @@
+[
+  {
+    "id": "a89b143f-abd4-46cc-bbfe-68381f3f8319",
+    "created_at": "2026-10-24T05:56:58.615044+00:00",
+    "image_filename": "a89b143f-abd4-46cc-bbfe-68381f3f8319.jpg",
+    "original_filename": "field_drone.jpg",
+    "image_width": 400,
+    "image_height": 300,
+    "detection_result": {
+      "image_id": "a89b143f-abd4-46cc-bbfe-68381f3f8319",
+      "width": 400,
+      "height": 300,
+      "person_count": 0,
+      "detections": [],
+      "inference_time_ms": 36.32,
+      "inference_ms": 36.32
+    },
+    "scene_features": {
+      "person_count": 0,
+      "coverage_ratio": 0.0,
+      "low_confidence_count": 0,
+      "horizontal_candidates": [],
+      "rules": {
+        "confidence_threshold": 0.25,
+        "low_confidence_threshold": 0.4,
+        "horizontal_aspect_ratio_min": 1.2,
+        "max_edge_touches_allowed": 1,
+        "edge_touch_tolerance_px": 5.0
+      },
+      "density_category": "none",
+      "spread_score": 0.0,
+      "centroid": [
+        0.0,
+        0.0
+      ],
+      "avg_confidence": 0.0,
+      "max_area_fraction": 0.0,
+      "min_area_fraction": 0.0,
+      "quadrant_counts": {
+        "top_left": 0,
+        "top_right": 0,
+        "bottom_left": 0,
+        "bottom_right": 0
+      },
+      "aspect_ratio_classification": "none",
+      "evidence_items": [
+        {
+          "id": "ev_person_count_zero",
+          "category": "count",
+          "origin": "yolo_detection",
+          "description": "Zero human subjects detected in frame at conf >= 0.25",
+          "value": 0,
+          "confidence": 1.0
+        }
+      ]
+    },
+    "assessment": {
+      "urgency_level": "LOW",
+      "summary": "Deterministic computer vision analysis detected zero human subjects within the provided image frame.",
+      "detected_situation": "No human subjects detected in scene",
+      "category": "no_people",
+      "recommended_resources": [],
+      "recommended_actions": [
+        "Confirm whether initial emergency reporting indicated human presence at this coordinate.",
+        "Verify camera field of view covers the intended incident perimeter."
+      ],
+      "confidence_in_assessment": 0.95,
+      "rationale": [
+        "person_count is 0 at confidence threshold >= 0.25",
+        "coverage_ratio is 0.0"
+      ],
+      "evidence_refs": [
+        "person_count",
+        "coverage_ratio"
+      ],
+      "warnings": [
+        "Visual detection is bounded by camera angle and resolution; occluded areas cannot be evaluated."
+      ],
+      "source": "rules_fallback",
+      "fallback_reason": "GROQ_API_KEY not configured"
+    },
+    "location": {
+      "latitude": null,
+      "longitude": null,
+      "address": "Sector 4 North",
+      "source": "user_entered"
+    },
+    "origin": "live_analysis",
+    "user_note": "Field reconnaissance pass",
+    "timing": {
+      "detect_ms": 36.56,
+      "reason_ms": 0.04,
+      "total_ms": 37.31
+    }
+  }
+]
