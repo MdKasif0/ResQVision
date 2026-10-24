@@ -522,7 +522,27 @@ export default function AnalyzePage() {
              Left: Image with SVG/Canvas Overlay (6-7 Cols)
              Right: Panel 1 Observed + Panel 2 Interpreted (5-6 Cols)
              =============================================================== */
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          <div className="space-y-4">
+            {/* Persistence Status & Direct Link to Saved Incident */}
+            <div className="p-3 rounded-md bg-[#FAF8F4] border border-[#E5E1D8] text-xs text-[#1F1D1A] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-subtle">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#5B6B3A]" />
+                <span>
+                  <strong>Incident Persisted:</strong> Record saved to local registry as{" "}
+                  <code className="font-mono text-[11px] bg-[#FFFFFF] px-1.5 py-0.5 rounded border border-[#E5E1D8]">
+                    {incident.id.slice(0, 8)}...
+                  </code>
+                </span>
+              </div>
+              <Link href={`/incidents/${encodeURIComponent(incident.id)}`}>
+                <Button variant="outline" size="sm" className="!py-1 !px-2.5 text-xs">
+                  Inspect in Registry &rarr;
+                </Button>
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
             {/* Left Column: Bounding Box Annotated Image (7 Cols) */}
             <div className="lg:col-span-7 space-y-4">
               <Panel
@@ -892,8 +912,10 @@ export default function AnalyzePage() {
               </Panel>
             </div>
           </div>
+        </div>
         )}
       </div>
+
     </AppShell>
   );
 }
