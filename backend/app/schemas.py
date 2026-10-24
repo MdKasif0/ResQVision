@@ -251,6 +251,14 @@ class AnalyzeRequest(BaseModel):
     location: Optional[Location] = None
 
 
+class ReasonDebugRequest(BaseModel):
+    detection_result: DetectionResult
+    scene_features: SceneFeatures
+    note: Optional[str] = None
+    location_label: Optional[str] = None
+
+
+
 class IncidentListItem(BaseModel):
     id: str
     created_at: str
