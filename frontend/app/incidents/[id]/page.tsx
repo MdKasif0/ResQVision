@@ -14,10 +14,10 @@ import {
 import { api, ApiClientError } from "@/lib/api";
 import type { Incident } from "@/lib/types";
 
-export default function IncidentDetailPage() {
-  const params = useParams();
+function IncidentDetailContent({ id }: { id: string }) {
   const router = useRouter();
-  const id = typeof params?.id === "string" ? params.id : "";
+
+
 
   const [incident, setIncident] = useState<Incident | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -570,3 +570,34 @@ export default function IncidentDetailPage() {
     </AppShell>
   );
 }
+
+function IncidentDetailLoader({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = React.use(params);
+  return <IncidentDetailContent id={id} />;
+}
+
+export default function IncidentDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  return (
+    <React.Suspense
+      fallback={
+        <AppShell>
+          <div className="py-24 flex flex-col items-center justify-center gap-3 text-xs text-[#6B665C]">
+            <Spinner size="md" />
+            <span>Loading incident details...</span>
+          </div>
+        </AppShell>
+      }
+    >
+      <IncidentDetailLoader params={params} />
+    </React.Suspense>
+  );
+}
+
