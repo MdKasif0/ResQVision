@@ -15,13 +15,17 @@ from app.exceptions import (
 )
 from app.schemas import (
     AnalyzeRequest,
+    Assessment,
     DetectResponse,
     ErrorBody,
     HealthResponse,
+    ReasonDebugRequest,
 )
 from app.services.detector import detector
 from app.services.features import compute_scene_features
 from app.services.image_validator import validate_and_process_image
+from app.services.reasoner import assess
+
 
 logger = logging.getLogger("resqvision.main")
 
@@ -196,6 +200,29 @@ async def analyze_endpoint(payload: AnalyzeRequest):
     raise NotImplementedException(
         "Groq LLM evidentiary assessment service is not implemented yet in this phase."
     )
+
+
+# Dev-only debugging endpoint for reasoning service
+if settings.DEBUG:
+    @app.post(
+        "/api/_reason_debug",
+        response_model=Assessment,
+        tags=["Debug"],
+        summary="Dev endpoint: run assessment on DetectionResult + SceneFeatures (DEBUG only)",
+    )
+    async def reason_debug_endpoint(payload: ReasonDebugRequest):
+        """
+        Temporary development endpoint for testing the reasoning service
+        with synthetic or captured detection telemetry.
+        """
+        assessment, source = assess(
+            detection_result=payload.detection_result,
+            features=payload.scene_features,
+            note=payload.note,
+            location_label=payload.location_label,
+        )
+        return assessment
+
 
 
 @app.get(

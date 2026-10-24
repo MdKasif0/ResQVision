@@ -13,7 +13,7 @@ EvidenceCategory = Literal[
 EvidenceOrigin = Literal[
     "yolo_detection", "deterministic_measurement", "heuristic"
 ]
-AssessmentSource = Literal["groq_llm", "fallback_heuristic", "rule_based"]
+AssessmentSource = Literal["groq_llm", "rules_fallback", "fallback_heuristic", "rule_based"]
 DensityCategory = Literal["none", "isolated", "small_group", "crowd"]
 AspectRatioClassification = Literal["standing", "prone_or_seated", "mixed"]
 LocationSource = Literal["user_entered"]
