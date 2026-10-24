@@ -157,14 +157,22 @@ class Location(BaseModel):
 
 
 class Assessment(BaseModel):
-    """Schema-validated incident triage assessment produced by Groq LLM."""
+    """Schema-validated incident triage assessment produced by Groq LLM or rules fallback."""
     urgency_level: Union[SeverityLevel, str] = Field(
         ..., description="Triage priority level"
     )
     summary: str = Field(..., description="Concise executive synopsis based strictly on evidence")
     detected_situation: str = Field(..., description="Interpretation of evidence")
+    category: Optional[str] = Field(
+        default=None,
+        description="Categorization: 'no_people', 'possible_person_down', 'crowding', 'routine_scene', or 'indeterminate'",
+    )
     recommended_resources: List[str] = Field(
         default_factory=list, description="Recommended emergency dispatch resources"
+    )
+    recommended_actions: List[str] = Field(
+        default_factory=list,
+        description="Cautious verification-oriented steps (never medical or legal claims)",
     )
     confidence_in_assessment: float = Field(
         ..., ge=0.0, le=1.0, description="Model self-evaluated assessment confidence"
@@ -172,12 +180,20 @@ class Assessment(BaseModel):
     rationale: List[str] = Field(
         default_factory=list, description="Evidentiary justification linking to SceneFeatures"
     )
+    evidence_refs: List[str] = Field(
+        default_factory=list,
+        description="Detection IDs (e.g. 'p1') or feature names cited as evidence",
+    )
     warnings: List[str] = Field(
         default_factory=list, description="Operational warnings and caveats"
     )
     source: AssessmentSource = Field(
-        default="groq_llm", description="Origin of assessment"
+        default="groq_llm", description="Origin of assessment: 'groq_llm' or 'rules_fallback'"
     )
+    fallback_reason: Optional[str] = Field(
+        default=None, description="Diagnostic explanation if generated via rules fallback"
+    )
+
 
 
 # ---------------------------------------------------------------------------
