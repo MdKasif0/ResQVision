@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Button, EmptyState, Panel } from "@/components";
+import { AppShell, Button, EmptyState, Panel } from "@/components";
 import type { IncidentListItem } from "@/lib/types";
 
 export default function IncidentsPage() {
@@ -10,7 +10,8 @@ export default function IncidentsPage() {
   const [incidents] = useState<IncidentListItem[]>([]);
 
   return (
-    <div className="space-y-6">
+    <AppShell>
+      <div className="space-y-6">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
