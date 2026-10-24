@@ -214,6 +214,12 @@ class Incident(BaseModel):
     location: Optional[Location] = Field(
         default=None, description="User-entered location metadata"
     )
+    origin: str = Field(default="live_analysis", description="Source pipeline of incident")
+    user_note: Optional[str] = Field(default=None, description="Optional user-supplied note")
+    timing: Optional[Dict[str, float]] = Field(
+        default=None, description="Inference and reasoning execution latencies in ms"
+    )
+
 
 
 # ---------------------------------------------------------------------------
