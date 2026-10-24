@@ -1,17 +1,47 @@
+import logging
+import uuid
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.concurrency import run_in_threadpool
 
 from app.config import settings
-from app.exceptions import AppException, NotImplementedException
-from app.schemas import AnalyzeRequest, ErrorBody, HealthResponse
+from app.exceptions import (
+    AppException,
+    ModelNotLoadedException,
+    NotImplementedException,
+)
+from app.schemas import (
+    AnalyzeRequest,
+    DetectResponse,
+    ErrorBody,
+    HealthResponse,
+)
+from app.services.detector import detector
+from app.services.features import compute_scene_features
 from app.services.image_validator import validate_and_process_image
+
+logger = logging.getLogger("resqvision.main")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager: Load YOLO nano weights once at startup."""
+    try:
+        detector.load_model()
+    except Exception as exc:
+        logger.error(f"Failed to load YOLO model at startup: {exc}")
+    yield
+    detector.unload_model()
+
 
 app = FastAPI(
     title="ResQVision Backend API",
     description="Emergency Incident Triage & Evidentiary Assessment Pipeline",
     version=settings.VERSION,
+    lifespan=lifespan,
 )
 
 # ---------------------------------------------------------------------------
@@ -65,6 +95,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         422: "VALIDATION_ERROR",
         500: "INTERNAL_SERVER_ERROR",
         501: "NOT_IMPLEMENTED",
+        503: "SERVICE_UNAVAILABLE",
     }
     error_code = code_map.get(exc.status_code, f"HTTP_{exc.status_code}")
     error_message = exc.detail if isinstance(exc.detail, str) else "HTTP Exception occurred"
@@ -100,10 +131,10 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
     summary="Health check and service status",
 )
 async def health_check():
-    """Return health status, model load flag, and Groq configuration status."""
+    """Return health status, model load flag truthfully, and Groq configuration status."""
     return HealthResponse(
         status="healthy",
-        model_loaded=False,  # Loaded in later YOLO step
+        model_loaded=detector.is_loaded(),
         groq_configured=settings.is_groq_configured,
         version=settings.VERSION,
     )
@@ -111,27 +142,47 @@ async def health_check():
 
 @app.post(
     "/api/detect",
+    response_model=DetectResponse,
     tags=["Inference"],
     summary="Upload image, validate, and run YOLO person detection",
     responses={
         400: {"model": ErrorBody},
         413: {"model": ErrorBody},
         415: {"model": ErrorBody},
-        501: {"model": ErrorBody},
+        422: {"model": ErrorBody},
+        503: {"model": ErrorBody},
     },
 )
 async def detect_endpoint(file: UploadFile = File(...)):
     """
     Validates uploaded imagery (size, MIME type, Pillow integrity, 1920px cap).
-    Stubbed to return 501 once validation passes.
+    Executes YOLO person detection and computes deterministic scene features.
     """
     # 1. Reusable upload validation service enforces type, size, and Pillow integrity
-    await validate_and_process_image(file)
+    processed_img = await validate_and_process_image(file)
 
-    # 2. Stubbed inference pipeline (implemented in Step 3)
-    raise NotImplementedException(
-        "YOLO person detection and feature extraction pipeline is not implemented yet in this phase."
+    # 2. Check if model is loaded; return 503 if unavailable
+    if not detector.is_loaded():
+        raise ModelNotLoadedException(
+            "YOLO detection model is not loaded. Service unavailable."
+        )
+
+    # 3. Execute inference in threadpool so event loop remains unblocked
+    image_id = str(uuid.uuid4())
+    detection_result = await run_in_threadpool(
+        detector.detect, processed_img.image, image_id
     )
+
+    # 4. Extract deterministic scene features (pure Python, no ML)
+    scene_features = compute_scene_features(detection_result)
+
+    return DetectResponse(
+        image_id=image_id,
+        detection_result=detection_result,
+        scene_features=scene_features,
+        features=scene_features,
+    )
+
 
 
 @app.post(
