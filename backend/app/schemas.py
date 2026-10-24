@@ -51,7 +51,7 @@ class EvidenceItem(BaseModel):
 
 class Detection(BaseModel):
     """Bounding box and confidence for an individual identified person (COCO class 0)."""
-    id: str = Field(..., description="Unique detection identifier (e.g. det_1)")
+    id: str = Field(..., description="Unique detection identifier (e.g. p1, p2)")
     class_id: int = Field(default=0, description="COCO class index (0 for person)")
     class_name: str = Field(default="person", description="Class name")
     confidence: float = Field(..., ge=0.0, le=1.0, description="Detection confidence")
@@ -59,14 +59,17 @@ class Detection(BaseModel):
         ...,
         min_length=4,
         max_length=4,
-        description="[x1, y1, x2, y2] normalized to [0.0, 1.0]",
+        description="[x1, y1, x2, y2] in pixel coordinates of the processed image",
     )
     area_fraction: float = Field(
         ..., ge=0.0, le=1.0, description="Normalized area occupied in frame"
     )
     aspect_ratio: float = Field(..., description="Width / Height aspect ratio")
     bbox: Optional[BBox] = Field(
-        default=None, description="Structured BBox representation"
+        default=None, description="Structured normalized BBox representation"
+    )
+    bbox_normalized: Optional[List[float]] = Field(
+        default=None, description="[nx1, ny1, nx2, ny2] normalized to [0.0, 1.0]"
     )
 
 
@@ -77,39 +80,61 @@ class DetectionResult(BaseModel):
     height: int = Field(..., gt=0, description="Image pixel height")
     person_count: int = Field(..., ge=0, description="Number of detected persons")
     detections: List[Detection] = Field(
-        default_factory=list, description="List of individual detections"
+        default_factory=list, description="List of individual detections sorted by confidence descending"
     )
     inference_time_ms: float = Field(
         default=0.0, ge=0.0, description="Model inference duration in milliseconds"
+    )
+    inference_ms: Optional[float] = Field(
+        default=None, description="Alias for inference_time_ms"
     )
 
 
 class SceneFeatures(BaseModel):
     """Deterministic spatial metrics derived from detections and image geometry."""
     person_count: int = Field(..., ge=0, description="Total persons detected")
+    coverage_ratio: float = Field(
+        default=0.0,
+        ge=0.0,
+        le=1.0,
+        description="Sum of box areas / image area (clamped to 1.0; note overlap is not deduplicated)",
+    )
+    low_confidence_count: int = Field(
+        default=0, ge=0, description="Detections with confidence < 0.4"
+    )
+    horizontal_candidates: List[str] = Field(
+        default_factory=list,
+        description="IDs of horizontal/prone candidates (w/h >= 1.2, not touching 2+ edges)",
+    )
+    rules: Dict[str, Any] = Field(
+        default_factory=dict, description="Threshold parameters used for rule evaluation"
+    )
     density_category: Union[DensityCategory, str] = Field(
-        ..., description="Spatial density category"
+        default="none", description="Spatial density category"
     )
     spread_score: float = Field(
-        ..., ge=0.0, le=1.0, description="Spatial dispersion score across image frame"
+        default=0.0, ge=0.0, le=1.0, description="Spatial dispersion score across image frame"
     )
     centroid: List[float] = Field(
-        ..., min_length=2, max_length=2, description="[cx, cy] center of mass [0.0, 1.0]"
+        default_factory=lambda: [0.0, 0.0],
+        min_length=2,
+        max_length=2,
+        description="[cx, cy] center of mass [0.0, 1.0]",
     )
     avg_confidence: float = Field(
-        ..., ge=0.0, le=1.0, description="Mean detection confidence"
+        default=0.0, ge=0.0, le=1.0, description="Mean detection confidence"
     )
     max_area_fraction: float = Field(
-        ..., ge=0.0, le=1.0, description="Largest person box area fraction"
+        default=0.0, ge=0.0, le=1.0, description="Largest person box area fraction"
     )
     min_area_fraction: float = Field(
-        ..., ge=0.0, le=1.0, description="Smallest person box area fraction"
+        default=0.0, ge=0.0, le=1.0, description="Smallest person box area fraction"
     )
     quadrant_counts: Dict[str, int] = Field(
         default_factory=dict, description="Persons detected per frame quadrant"
     )
     aspect_ratio_classification: Union[AspectRatioClassification, str] = Field(
-        ..., description="Dominant posture indicator"
+        default="standing", description="Dominant posture indicator"
     )
     evidence_items: List[EvidenceItem] = Field(
         default_factory=list, description="Structured evidence items"
@@ -200,6 +225,8 @@ class DetectResponse(BaseModel):
     image_id: str
     detection_result: DetectionResult
     scene_features: SceneFeatures
+    features: Optional[SceneFeatures] = None
+
 
 
 class AnalyzeRequest(BaseModel):
