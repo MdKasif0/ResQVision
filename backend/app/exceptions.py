@@ -77,3 +77,22 @@ class NotFoundException(AppException):
             code="NOT_FOUND",
             message=message,
         )
+
+
+class ModelNotLoadedException(AppException):
+    def __init__(self, message: str = "YOLO detection model is not loaded. Service unavailable."):
+        super().__init__(
+            status_code=503,
+            code="MODEL_NOT_LOADED",
+            message=message,
+        )
+
+
+class ServiceUnavailableException(AppException):
+    def __init__(self, message: str = "Service is temporarily unavailable."):
+        super().__init__(
+            status_code=503,
+            code="SERVICE_UNAVAILABLE",
+            message=message,
+        )
+
