@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { BackendStatus } from "@/components";
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState("Live Map");
@@ -127,6 +128,9 @@ export default function HomePage() {
               </div>
             </div>
           </div>
+
+          {/* Backend Status Indicator */}
+          <BackendStatus theme="dark" />
 
           {/* Notification Bell */}
           <button
