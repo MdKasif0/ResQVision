@@ -67,3 +67,37 @@ def test_detect_model_not_loaded_503():
     data = response.json()
     assert data["error"]["code"] == "MODEL_NOT_LOADED"
     assert "not loaded" in data["error"]["message"].lower()
+
+
+def test_analyze_endpoint_end_to_end():
+    """Verify POST /api/analyze full pipeline: vision -> features -> assessment -> incident."""
+    client = TestClient(app)
+    img = Image.new("RGB", (400, 300), color=(100, 140, 180))
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG")
+    buf.seek(0)
+
+    response = client.post(
+        "/api/analyze",
+        files={"file": ("field_drone.jpg", buf, "image/jpeg")},
+        data={
+            "location_label": "Sector 4 North",
+            "note": "Field reconnaissance pass",
+        },
+    )
+    assert response.status_code == 200
+    incident = response.json()
+
+    assert "id" in incident
+    assert incident["origin"] == "live_analysis"
+    assert incident["user_note"] == "Field reconnaissance pass"
+    assert incident["location"]["address"] == "Sector 4 North"
+    assert incident["location"]["source"] == "user_entered"
+    assert "detection_result" in incident
+    assert "scene_features" in incident
+    assert "assessment" in incident
+    assert "timing" in incident
+    assert incident["timing"]["detect_ms"] > 0
+    assert incident["timing"]["total_ms"] > 0
+    assert incident["assessment"]["source"] in ("groq_llm", "rules_fallback")
+

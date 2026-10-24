@@ -3,7 +3,7 @@ import { Spinner } from "./Spinner";
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "ghost" | "danger";
+  variant?: "primary" | "secondary" | "ghost" | "danger" | "outline";
   size?: "sm" | "md" | "lg";
   isLoading?: boolean;
 }
@@ -31,11 +31,14 @@ export function Button({
       "bg-[#1F1D1A] text-[#FFFFFF] hover:bg-[#2E2A27] active:bg-[#141311] border border-transparent shadow-subtle",
     secondary:
       "bg-[#FFFFFF] text-[#1F1D1A] border border-[#E5E1D8] hover:bg-[#FAF8F4] active:bg-[#F0ECE3] shadow-subtle",
+    outline:
+      "bg-[#FFFFFF] text-[#1F1D1A] border border-[#E5E1D8] hover:bg-[#FAF8F4] active:bg-[#F0ECE3] shadow-subtle",
     ghost:
       "bg-transparent text-[#1F1D1A] hover:bg-[#F0ECE3] active:bg-[#E5E1D8] border border-transparent",
     danger:
       "bg-[#FFFFFF] text-[#B5483A] border border-[#B5483A] hover:bg-[#FAF0EE] active:bg-[#F3E2DF]",
   };
+
 
   return (
     <button
