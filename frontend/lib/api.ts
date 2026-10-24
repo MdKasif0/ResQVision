@@ -98,17 +98,28 @@ export const api = {
   },
 
   /**
-   * Submit scene features to Groq LLM for schema-validated assessment (POST /api/analyze)
+   * End-to-end incident analysis: vision, features, and evidentiary assessment (POST /api/analyze)
    */
   async analyze(params: {
-    image_id: string;
-    scene_features: SceneFeatures;
+    file: File;
+    note?: string;
+    location_label?: string;
+    lat?: number;
+    lng?: number;
   }): Promise<Incident> {
+    const formData = new FormData();
+    formData.append("file", params.file);
+    if (params.note) formData.append("note", params.note);
+    if (params.location_label) formData.append("location_label", params.location_label);
+    if (params.lat !== undefined) formData.append("lat", String(params.lat));
+    if (params.lng !== undefined) formData.append("lng", String(params.lng));
+
     return request<Incident>("/api/analyze", {
       method: "POST",
-      body: JSON.stringify(params),
+      body: formData,
     });
   },
+
 
   /**
    * List all persisted incidents (GET /api/incidents)

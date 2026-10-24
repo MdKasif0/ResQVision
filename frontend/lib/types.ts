@@ -38,6 +38,9 @@ export interface QuadrantCounts {
 
 export interface SceneFeatures {
   person_count: number;
+  coverage_ratio: number; // Sum of box areas / image area [0.0 - 1.0]
+  low_confidence_count: number; // Detections with confidence < 0.4
+  horizontal_candidates: string[]; // Detection IDs with aspect ratio >= 1.2
   density_category: DensityCategory;
   spread_score: number; // Spatial dispersion metric across frame [0.0 - 1.0]
   centroid: [number, number]; // [cx, cy] center of mass of detected people [0.0 - 1.0]
@@ -46,18 +49,37 @@ export interface SceneFeatures {
   min_area_fraction: number; // Smallest person box (distant subjects)
   quadrant_counts: QuadrantCounts;
   aspect_ratio_classification: AspectRatioClassification;
+  rules?: Record<string, any>;
 }
 
 export type UrgencyLevel = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "UNKNOWN";
 
 export interface Assessment {
   urgency_level: UrgencyLevel;
-  summary: string; // 2-3 sentence executive synopsis based strictly on evidence
+  category?: string;
+  summary: string; // Executive synopsis based strictly on evidence
   detected_situation: string; // Interpretation of evidence
   recommended_resources: string[]; // Recommended dispatch items
-  confidence_in_assessment: number; // LLM self-evaluated confidence [0.0 - 1.0]
+  recommended_actions?: string[]; // Cautious verification steps
+  confidence_in_assessment: number; // Model self-evaluated confidence [0.0 - 1.0]
   rationale: string[]; // Specific bullet points tying conclusions back to SceneFeatures
-  warnings: string[]; // Caveats
+  evidence_refs?: string[]; // Cited evidence keys and IDs
+  warnings: string[]; // Caveats and limitations
+  source: "groq_llm" | "rules_fallback" | string;
+  fallback_reason?: string;
+}
+
+export interface LocationMetadata {
+  latitude?: number;
+  longitude?: number;
+  address?: string;
+  source: "user_entered";
+}
+
+export interface IncidentTiming {
+  detect_ms: number;
+  reason_ms: number;
+  total_ms: number;
 }
 
 export interface Incident {
@@ -70,6 +92,10 @@ export interface Incident {
   detection_result: DetectionResult;
   scene_features: SceneFeatures;
   assessment: Assessment;
+  location?: LocationMetadata;
+  origin?: string;
+  user_note?: string;
+  timing?: IncidentTiming;
 }
 
 /** API Standard Error Format: {"error": {"code": string, "message": string}} */
