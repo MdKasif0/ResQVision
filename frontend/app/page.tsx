@@ -9,7 +9,7 @@ export default function HomePage() {
   const [todayDropdownOpen, setTodayDropdownOpen] = useState(false);
 
   return (
-    <div className="relative w-full min-h-screen bg-[#070A11] text-white overflow-hidden font-sans select-none">
+    <div className="relative w-full h-screen min-h-[760px] max-h-screen bg-[#070A11] text-white overflow-hidden font-sans select-none flex flex-col">
       {/* 1. Full-bleed Aerial Background Map */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none z-0"
@@ -17,22 +17,22 @@ export default function HomePage() {
           backgroundImage: "url('/background.jpg')",
         }}
       >
-        {/* Cinematic gradient scrims to ensure UI contrast while revealing the map */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#070A11]/90 via-[#070A11]/45 to-transparent w-full h-full" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#070A11]/80 via-transparent to-[#070A11]/40 w-full h-full" />
+        {/* Soft linear gradient scrim to ensure dashboard legibility while keeping map vivid */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#070A11]/92 via-[#070A11]/45 to-transparent w-full h-full" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#070A11]/75 via-transparent to-[#070A11]/35 w-full h-full" />
       </div>
 
       {/* 2. Top Header Navigation Bar */}
-      <header className="relative z-30 w-full h-16 px-5 sm:px-6 flex items-center justify-between border-b border-white/5 bg-[#070A11]/30 backdrop-blur-md">
+      <header className="relative z-30 w-full h-15 px-5 lg:px-7 flex items-center justify-between border-b border-white/5 bg-[#070A11]/25 backdrop-blur-md shrink-0">
         {/* Left Section: Brand & Nav Tabs */}
-        <div className="flex items-center gap-3 sm:gap-6">
+        <div className="flex items-center gap-3 lg:gap-7">
           {/* Logo & Brand Wordmark */}
           <Link href="/" className="flex items-center gap-2.5 group">
             <div className="w-8 h-8 relative flex items-center justify-center">
               <img
                 src="/assets/logo.png"
                 alt="ResQVision Logo"
-                className="w-7 h-7 object-contain drop-shadow-[0_0_10px_rgba(255,107,107,0.4)]"
+                className="w-7 h-7 object-contain drop-shadow-[0_0_12px_rgba(255,107,107,0.45)]"
               />
             </div>
             <span className="text-base sm:text-lg font-bold tracking-tight text-white font-sans">
@@ -41,12 +41,12 @@ export default function HomePage() {
           </Link>
 
           {/* Nav Tabs */}
-          <nav className="hidden md:flex items-center gap-1.5 ml-2">
+          <nav className="hidden md:flex items-center gap-1.5 ml-1">
             <button
               onClick={() => setActiveTab("Live Map")}
               className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-150 ${
                 activeTab === "Live Map"
-                  ? "bg-white/15 border border-white/25 text-white shadow-[0_2px_10px_rgba(0,0,0,0.3)] backdrop-blur-md"
+                  ? "bg-white/12 border border-white/25 text-white shadow-[0_2px_12px_rgba(0,0,0,0.35)] backdrop-blur-md"
                   : "text-white/65 hover:text-white hover:bg-white/5"
               }`}
             >
@@ -65,7 +65,7 @@ export default function HomePage() {
               onClick={() => setActiveTab("Resources")}
               className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${
                 activeTab === "Resources"
-                  ? "bg-white/15 border border-white/25 text-white"
+                  ? "bg-white/12 border border-white/25 text-white"
                   : "text-white/65 hover:text-white hover:bg-white/5"
               }`}
             >
@@ -76,7 +76,7 @@ export default function HomePage() {
               onClick={() => setActiveTab("Analytics")}
               className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${
                 activeTab === "Analytics"
-                  ? "bg-white/15 border border-white/25 text-white"
+                  ? "bg-white/12 border border-white/25 text-white"
                   : "text-white/65 hover:text-white hover:bg-white/5"
               }`}
             >
@@ -87,7 +87,7 @@ export default function HomePage() {
               onClick={() => setActiveTab("Alerts")}
               className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${
                 activeTab === "Alerts"
-                  ? "bg-white/15 border border-white/25 text-white"
+                  ? "bg-white/12 border border-white/25 text-white"
                   : "text-white/65 hover:text-white hover:bg-white/5"
               }`}
             >
@@ -100,7 +100,7 @@ export default function HomePage() {
         <div className="flex items-center gap-3 sm:gap-4">
           {/* Search Input Box */}
           <div className="relative hidden sm:flex items-center">
-            <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-slate-900/60 border border-white/15 text-white text-xs w-64 lg:w-72 backdrop-blur-md shadow-inner">
+            <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-slate-900/60 border border-white/15 text-white text-xs w-72 lg:w-80 backdrop-blur-md shadow-inner">
               <svg
                 className="w-3.5 h-3.5 text-white/50 shrink-0"
                 fill="none"
@@ -131,7 +131,7 @@ export default function HomePage() {
           {/* Notification Bell */}
           <button
             aria-label="Notifications"
-            className="relative w-9 h-9 rounded-full bg-slate-900/60 border border-white/15 flex items-center justify-center text-white/80 hover:text-white backdrop-blur-md transition-colors"
+            className="relative w-8.5 h-8.5 rounded-full bg-slate-900/60 border border-white/15 flex items-center justify-center text-white/80 hover:text-white backdrop-blur-md transition-colors"
           >
             <svg
               className="w-4 h-4"
@@ -176,13 +176,13 @@ export default function HomePage() {
       </header>
 
       {/* 3. Main Workspace Layout */}
-      <div className="relative z-20 flex w-full min-h-[calc(100vh-4rem)]">
+      <div className="relative z-20 flex flex-1 w-full overflow-hidden">
         {/* Left Vertical Icon Dock */}
-        <aside className="w-16 sm:w-20 flex flex-col items-center py-6 gap-5 shrink-0 border-r border-white/5 bg-[#070A11]/30 backdrop-blur-md">
+        <aside className="w-16 flex flex-col items-center py-4 gap-3.5 shrink-0 border-r border-white/5 bg-[#070A11]/30 backdrop-blur-md">
           {/* Active Home Icon with glowing red rounded square */}
           <button
             aria-label="Home Dashboard"
-            className="w-11 h-11 rounded-2xl bg-[#EF4444]/15 border border-[#EF4444]/45 text-[#F87171] flex items-center justify-center shadow-[0_0_20px_rgba(239,68,68,0.35)] transition-all"
+            className="w-10.5 h-10.5 rounded-2xl bg-[#EF4444]/15 border border-[#EF4444]/45 text-[#F87171] flex items-center justify-center shadow-[0_0_20px_rgba(239,68,68,0.35)] transition-all"
           >
             <svg
               className="w-5 h-5"
@@ -202,7 +202,7 @@ export default function HomePage() {
           {/* Map View Icon */}
           <button
             aria-label="Map View"
-            className="w-10 h-10 rounded-xl text-white/50 hover:text-white hover:bg-white/5 flex items-center justify-center transition-colors"
+            className="w-9.5 h-9.5 rounded-xl text-white/55 hover:text-white hover:bg-white/5 flex items-center justify-center transition-colors"
           >
             <svg
               className="w-5 h-5"
@@ -222,7 +222,7 @@ export default function HomePage() {
           {/* Alert Triangle Icon */}
           <button
             aria-label="Alerts"
-            className="w-10 h-10 rounded-xl text-white/50 hover:text-white hover:bg-white/5 flex items-center justify-center transition-colors"
+            className="w-9.5 h-9.5 rounded-xl text-white/55 hover:text-white hover:bg-white/5 flex items-center justify-center transition-colors"
           >
             <svg
               className="w-5 h-5"
@@ -242,7 +242,7 @@ export default function HomePage() {
           {/* Teams / People Icon */}
           <button
             aria-label="Response Teams"
-            className="w-10 h-10 rounded-xl text-white/50 hover:text-white hover:bg-white/5 flex items-center justify-center transition-colors"
+            className="w-9.5 h-9.5 rounded-xl text-white/55 hover:text-white hover:bg-white/5 flex items-center justify-center transition-colors"
           >
             <svg
               className="w-5 h-5"
@@ -262,7 +262,7 @@ export default function HomePage() {
           {/* Drone Icon */}
           <button
             aria-label="Drone Surveillance"
-            className="w-10 h-10 rounded-xl text-white/50 hover:text-white hover:bg-white/5 flex items-center justify-center transition-colors"
+            className="w-9.5 h-9.5 rounded-xl text-white/55 hover:text-white hover:bg-white/5 flex items-center justify-center transition-colors"
           >
             <svg
               className="w-5 h-5"
@@ -283,7 +283,7 @@ export default function HomePage() {
           {/* Incidents List Icon */}
           <button
             aria-label="Incident List"
-            className="w-10 h-10 rounded-xl text-white/50 hover:text-white hover:bg-white/5 flex items-center justify-center transition-colors"
+            className="w-9.5 h-9.5 rounded-xl text-white/55 hover:text-white hover:bg-white/5 flex items-center justify-center transition-colors"
           >
             <svg
               className="w-5 h-5"
@@ -303,7 +303,7 @@ export default function HomePage() {
           {/* Settings Icon */}
           <button
             aria-label="Settings"
-            className="w-10 h-10 rounded-xl text-white/50 hover:text-white hover:bg-white/5 flex items-center justify-center transition-colors mt-auto"
+            className="w-9.5 h-9.5 rounded-xl text-white/55 hover:text-white hover:bg-white/5 flex items-center justify-center transition-colors"
           >
             <svg
               className="w-5 h-5"
@@ -327,9 +327,9 @@ export default function HomePage() {
         </aside>
 
         {/* Center-Left Content Area */}
-        <main className="flex-1 p-5 sm:p-7 max-w-[1400px] flex flex-col justify-between relative">
+        <main className="flex-1 p-5 lg:p-7 flex flex-col justify-between overflow-y-auto z-10 max-w-[1440px]">
           {/* Top Hero Section */}
-          <div className="space-y-4 max-w-2xl">
+          <div className="space-y-3 max-w-xl">
             {/* Tagline */}
             <p className="text-[10px] tracking-[0.25em] font-semibold text-white/50 uppercase">
               PREPARE. RESPOND. RECOVER.
@@ -337,23 +337,23 @@ export default function HomePage() {
 
             {/* Main Heading */}
             <div className="space-y-0.5">
-              <h1 className="text-4xl sm:text-5xl lg:text-[54px] font-black text-white tracking-tight leading-[1.08]">
+              <h1 className="text-4xl sm:text-5xl lg:text-[54px] font-black text-white tracking-tight leading-[1.05]">
                 Disaster
               </h1>
-              <h1 className="text-4xl sm:text-5xl lg:text-[54px] font-black tracking-tight leading-[1.08] text-[#FF8577]">
+              <h1 className="text-4xl sm:text-5xl lg:text-[54px] font-black tracking-tight leading-[1.05] text-[#FF8577]">
                 Management
               </h1>
             </div>
 
             {/* Subtext */}
-            <p className="text-xs sm:text-sm text-white/70 max-w-md font-normal leading-relaxed pt-1">
+            <p className="text-xs sm:text-[13px] text-white/70 max-w-md font-normal leading-relaxed pt-1">
               Real-time information, faster response,
               <br />
               safer communities.
             </p>
 
             {/* 4 Quick Stat Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 max-w-xl">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2.5 max-w-lg">
               {/* Stat 1: Active Incidents */}
               <div className="bg-[#0C121E]/65 border border-white/10 rounded-2xl p-3 backdrop-blur-xl shadow-lg hover:border-white/20 transition-all flex flex-col justify-between h-[92px]">
                 <div className="w-7 h-7 rounded-lg bg-red-500/20 text-red-400 flex items-center justify-center">
@@ -462,7 +462,7 @@ export default function HomePage() {
                     stroke="currentColor"
                     strokeWidth="2"
                   >
-                    <path d="M4 5h16M12 5v3M12 8c4 0 7 2 7 5s-3 4-7 4H8c-2 0-3-1-3-2s1-3 3-3h11M8 17v2m8-2v2M6 19h12" />
+                    <path d="M3 6h18M12 6v3M10 9h4c3 0 5 1.5 5 4.5S17 17 13 17H8c-2.5 0-4-1.5-4-3.5S5.5 9 8 9h2M7 17v2m8-2v2M5 19h12" />
                   </svg>
                 </div>
                 <div>
@@ -481,7 +481,7 @@ export default function HomePage() {
           </div>
 
           {/* Bottom Dual Panels: Ongoing Incidents & Live Impact Overview */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 mt-8 items-end">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-end pt-5">
             {/* Left Card: Ongoing Incidents (5 Cols) */}
             <div className="lg:col-span-5 bg-[#0C121E]/75 border border-white/10 rounded-2xl p-4 backdrop-blur-2xl shadow-2xl">
               {/* Header */}
@@ -639,7 +639,7 @@ export default function HomePage() {
               {/* 3 Overview Sub-Cards with Glowing Bar Charts */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3">
                 {/* 1. People Affected */}
-                <div className="bg-[#121A2A]/70 border border-white/10 rounded-xl p-3 flex flex-col justify-between h-[120px]">
+                <div className="bg-[#121A2A]/70 border border-white/10 rounded-xl p-3 flex flex-col justify-between h-[124px]">
                   <div className="flex items-start gap-2.5">
                     <div className="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -657,8 +657,8 @@ export default function HomePage() {
                   </div>
 
                   {/* Blue Glowing Wave/Bar Graphic */}
-                  <div className="flex items-end justify-between gap-1 h-7 pt-2 px-0.5">
-                    {[6, 9, 14, 18, 11, 16, 22, 18, 20, 16, 12, 18, 14, 8].map((h, i) => (
+                  <div className="flex items-end justify-between gap-1 h-8 pt-1 px-0.5">
+                    {[6, 10, 16, 22, 14, 18, 26, 20, 24, 18, 14, 22, 16, 10].map((h, i) => (
                       <span
                         key={i}
                         style={{ height: `${h}px` }}
@@ -669,7 +669,7 @@ export default function HomePage() {
                 </div>
 
                 {/* 2. In Safe Shelters */}
-                <div className="bg-[#121A2A]/70 border border-white/10 rounded-xl p-3 flex flex-col justify-between h-[120px]">
+                <div className="bg-[#121A2A]/70 border border-white/10 rounded-xl p-3 flex flex-col justify-between h-[124px]">
                   <div className="flex items-start gap-2.5">
                     <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -687,8 +687,8 @@ export default function HomePage() {
                   </div>
 
                   {/* Green Glowing Wave/Bar Graphic */}
-                  <div className="flex items-end justify-between gap-1 h-7 pt-2 px-0.5">
-                    {[8, 12, 16, 10, 18, 15, 22, 14, 18, 16, 20, 15, 12, 16].map((h, i) => (
+                  <div className="flex items-end justify-between gap-1 h-8 pt-1 px-0.5">
+                    {[8, 14, 20, 12, 22, 18, 26, 16, 22, 18, 24, 18, 14, 18].map((h, i) => (
                       <span
                         key={i}
                         style={{ height: `${h}px` }}
@@ -699,7 +699,7 @@ export default function HomePage() {
                 </div>
 
                 {/* 3. Critical Areas */}
-                <div className="bg-[#121A2A]/70 border border-white/10 rounded-xl p-3 flex flex-col justify-between h-[120px]">
+                <div className="bg-[#121A2A]/70 border border-white/10 rounded-xl p-3 flex flex-col justify-between h-[124px]">
                   <div className="flex items-start gap-2.5">
                     <div className="w-7 h-7 rounded-lg bg-red-500/20 text-red-400 flex items-center justify-center shrink-0">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -717,8 +717,8 @@ export default function HomePage() {
                   </div>
 
                   {/* Red Glowing Wave/Bar Graphic */}
-                  <div className="flex items-end justify-between gap-1 h-7 pt-2 px-0.5">
-                    {[12, 18, 14, 20, 16, 12, 18, 22, 16, 14, 18, 12, 15, 10].map((h, i) => (
+                  <div className="flex items-end justify-between gap-1 h-8 pt-1 px-0.5">
+                    {[14, 22, 16, 24, 18, 14, 22, 26, 18, 16, 22, 14, 18, 12].map((h, i) => (
                       <span
                         key={i}
                         style={{ height: `${h}px` }}
@@ -735,11 +735,11 @@ export default function HomePage() {
 
       {/* 4. Interactive Floating Map Cards on the Right */}
       {/* Wildfire Floating Marker Card */}
-      <div className="hidden lg:flex absolute top-[14%] right-[22%] z-20 items-center gap-3 bg-[#0C121E]/85 border border-white/20 rounded-2xl p-3 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] hover:scale-105 transition-transform cursor-pointer">
-        <div className="w-9 h-9 rounded-xl bg-red-500/25 border border-red-500/40 text-red-400 flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(239,68,68,0.4)]">
-          {/* Flame Icon */}
-          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 23c-4.97 0-9-4.03-9-9 0-3.8 2.37-7.05 5.75-8.35.43-.16.9.15.9.61 0 .6.19 1.18.52 1.66.44.64 1.12 1.08 1.83 1.08.18 0 .36-.03.54-.08 1.39-.42 2.22-1.78 2.02-3.23-.05-.36.19-.69.55-.76.36-.07.72.08.89.4 1.88 3.51 1.76 7.84-.33 11.23-.2.32-.08.74.24.94.32.2.74.08.94-.24 2.33-3.78 2.45-8.6.34-12.49-.24-.44-.81-.59-1.23-.33-.09.06-.18.12-.26.19C6.27 6.46 4 9.94 4 14c0 4.41 3.59 8 8 8s8-3.59 8-8c0-.79-.12-1.57-.35-2.31-.14-.45-.63-.7-1.07-.55-.45.14-.7.63-.55 1.07.19.6.28 1.23.28 1.79 0 4.97-4.03 9-9 9z" />
+      <div className="hidden lg:flex absolute top-[15%] right-[22%] z-20 items-center gap-3 bg-[#0C121E]/85 border border-white/20 rounded-2xl p-3 backdrop-blur-xl shadow-[0_12px_32px_rgba(0,0,0,0.6)] hover:scale-105 transition-transform cursor-pointer">
+        <div className="w-9 h-9 rounded-xl bg-red-500/25 border border-red-500/40 text-red-400 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(239,68,68,0.45)]">
+          {/* Solid Flame Icon */}
+          <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+            <path d="M12.87 2.15c-.46-.37-1.12-.22-1.38.3-.77 1.54-1.8 2.92-3.05 4.09-1.92 1.8-3.44 4.07-3.44 6.84 0 4.19 3.4 7.62 7.6 7.62s7.6-3.43 7.6-7.62c0-2.31-1.07-4.43-2.61-6.07-.37-.39-.99-.39-1.37 0-.33.34-.48.82-.39 1.28.3 1.5-.1 3.03-1.09 4.14-.19.21-.49.3-.76.23-.27-.07-.48-.28-.55-.55-.49-1.94-.09-3.98 1.05-5.59.34-.48.24-1.14-.24-1.5-.47-.36-1.13-.24-1.5.24-1.46 2.05-1.97 4.66-1.35 7.15.14.56-.25 1.1-.81 1.15-.5.04-.96-.32-1.04-.82-.6-3.8 1.05-7.58 2.83-10.88.25-.47.16-1.05-.25-1.4z" />
           </svg>
         </div>
         <div className="min-w-[140px]">
@@ -758,14 +758,14 @@ export default function HomePage() {
       </div>
 
       {/* Flood Risk Floating Marker Card */}
-      <div className="hidden lg:flex absolute bottom-[32%] right-[5%] z-20 items-center gap-3 bg-[#0C121E]/85 border border-white/20 rounded-2xl p-3 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] hover:scale-105 transition-transform cursor-pointer">
-        <div className="w-9 h-9 rounded-xl bg-blue-500/25 border border-blue-500/40 text-blue-400 flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(59,130,246,0.4)]">
+      <div className="hidden lg:flex absolute bottom-[27%] right-[5%] z-20 items-center gap-3 bg-[#0C121E]/85 border border-white/20 rounded-2xl p-3 backdrop-blur-xl shadow-[0_12px_32px_rgba(0,0,0,0.6)] hover:scale-105 transition-transform cursor-pointer">
+        <div className="w-9 h-9 rounded-xl bg-blue-500/25 border border-blue-500/40 text-blue-400 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(59,130,246,0.45)]">
           {/* Waves / Water Icon */}
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9c1.5 0 2.25.75 3.75.75s2.25-.75 3.75-.75 2.25.75 3.75.75 2.25-.75 3.75-.75 2.25.75 3.75.75M3.75 15c1.5 0 2.25.75 3.75.75s2.25-.75 3.75-.75 2.25.75 3.75.75 2.25-.75 3.75-.75 2.25.75 3.75.75" />
           </svg>
         </div>
-        <div className="min-w-[150px]">
+        <div className="min-w-[155px]">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-white tracking-tight">Flood Risk</span>
             <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-[#3B82F6]/25 text-[#93C5FD] border border-[#3B82F6]/50">
