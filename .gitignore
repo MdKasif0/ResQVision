@@ -1,0 +1,37 @@
+# Environments & Secrets
+backend/.env
+.env
+.env.local
+.env.*.local
+
+# Virtual Environments
+.venv/
+backend/.venv/
+venv/
+ENV/
+
+# Python Cache & Builds
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+
+# Node & Frontend
+node_modules/
+.next/
+out/
+
+# Models & Weights
+backend/models/
+*.pt
+*.onnx
+*.bin
+
+# Data uploads
+data/uploads/
+
+# Operating System Files
+.DS_Store
+Thumbs.db

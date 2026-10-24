@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* ResQVision Core Palette */
+  --color-ivory: #FAF8F4;
+  --color-surface: #FFFFFF;
+  --color-stone: #E5E1D8;
+  --color-charcoal: #1F1D1A;
+  --color-muted: #6B665C;
+
+  /* Severity Tokens */
+  --color-severity-high: #B5483A;
+  --color-severity-moderate: #B7791F;
+  --color-severity-low: #5B6B3A;
+  --color-severity-indeterminate: #8A857A;
+
+  /* Subtle elevations & radii */
+  --shadow-subtle: 0 1px 2px 0 rgba(31, 29, 26, 0.05);
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+}
+
+@layer base {
+  html,
+  body {
+    background-color: #FAF8F4;
+    color: #1F1D1A;
+    font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Form inputs & controls accent color */
+  input,
+  button,
+  select,
+  textarea {
+    accent-color: #1F1D1A;
+  }
+
+  /* Anchor links default styling */
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+}
+
+::selection {
+  background-color: #1F1D1A;
+  color: #FAF8F4;
+}
+
+:focus-visible {
+  outline: 2px solid #1F1D1A;
+  outline-offset: 2px;
+}
