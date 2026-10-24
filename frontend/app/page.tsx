@@ -179,16 +179,23 @@ export default function AnalyzePage() {
           </div>
 
           {incident && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={clearSelectedFile}
-              className="self-start sm:self-auto"
-            >
-              Analyze New Image
-            </Button>
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              <Link href={`/incidents/${encodeURIComponent(incident.id)}`}>
+                <Button variant="outline" size="sm">
+                  View in Incident Registry &rarr;
+                </Button>
+              </Link>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearSelectedFile}
+              >
+                Analyze New Image
+              </Button>
+            </div>
           )}
         </div>
+
 
         {/* Global Error Banner (Standard error display with honest retry) */}
         {errorMessage && (
