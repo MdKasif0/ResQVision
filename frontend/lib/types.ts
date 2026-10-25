@@ -8,7 +8,8 @@ export interface Detection {
   class_id: number; // Class index (0 for person)
   class_name: string; // COCO class name ("person")
   confidence: float_number; // Confidence score [0.0 - 1.0]
-  bbox_xyxy: [number, number, number, number]; // [x1, y1, x2, y2] normalized [0.0 - 1.0]
+  bbox_xyxy: [number, number, number, number]; // [x1, y1, x2, y2] pixel coordinates of processed image
+  bbox_normalized?: [number, number, number, number]; // [nx1, ny1, nx2, ny2] normalized [0.0 - 1.0]
   area_fraction: number; // Normalized area occupied (width * height)
   aspect_ratio: number; // Width / Height ratio
 }
@@ -49,7 +50,7 @@ export interface SceneFeatures {
   min_area_fraction: number; // Smallest person box (distant subjects)
   quadrant_counts: QuadrantCounts;
   aspect_ratio_classification: AspectRatioClassification;
-  rules?: Record<string, any>;
+  rules?: Record<string, unknown>;
 }
 
 export type UrgencyLevel = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "UNKNOWN";
@@ -70,9 +71,9 @@ export interface Assessment {
 }
 
 export interface LocationMetadata {
-  latitude?: number;
-  longitude?: number;
-  address?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  address?: string | null;
   source: "user_entered";
 }
 
@@ -120,6 +121,15 @@ export interface DetectResponse {
   scene_features: SceneFeatures;
 }
 
+export interface SampleItem {
+  id: string;
+  filename: string;
+  name: string;
+  description: string;
+  expected_persons?: number;
+  available?: boolean;
+}
+
 export interface IncidentListItem {
   id: string;
   created_at: string;
@@ -130,6 +140,7 @@ export interface IncidentListItem {
   person_count: number;
   location_label?: string | null;
   summary?: string;
+  location?: LocationMetadata | null;
 }
 
 export type IncidentSummary = IncidentListItem;

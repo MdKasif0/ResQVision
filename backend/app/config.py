@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     GROQ_MODEL: str = "openai/gpt-oss-120b"
 
     # CORS Configuration: comma-separated string or list of allowed origins
-    CORS_ORIGINS: str = "http://localhost:3000"
+    CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
 
     # File Upload limits
     MAX_UPLOAD_MB: int = 8

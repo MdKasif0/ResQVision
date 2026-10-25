@@ -40,11 +40,34 @@ export function BackendStatus({
   };
 
   useEffect(() => {
-    checkHealth();
+    let isMounted = true;
+    const performCheck = async () => {
+      try {
+        const data = await api.health();
+        if (!isMounted) return;
+        setHealthData(data);
+        setStatus("reachable");
+        setErrorMessage(null);
+      } catch (err) {
+        if (!isMounted) return;
+        setStatus("unreachable");
+        setHealthData(null);
+        if (err instanceof ApiClientError) {
+          setErrorMessage(err.message);
+        } else if (err instanceof Error) {
+          setErrorMessage(err.message);
+        } else {
+          setErrorMessage("Connection refused or backend unreachable");
+        }
+      }
+    };
 
-    // Check periodically every 10 seconds
-    const interval = setInterval(checkHealth, 10000);
-    return () => clearInterval(interval);
+    performCheck();
+    const interval = setInterval(performCheck, 10000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   const isDark = theme === "dark";

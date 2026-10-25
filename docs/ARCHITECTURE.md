@@ -22,7 +22,8 @@ ResQVision is an emergency response assessment pipeline that accepts field or dr
 +-------------------------------------------------------------------------+
 |                        Frontend (Next.js 15+)                           |
 |  - App Router, Tailwind CSS, Lucide Icons                               |
-|  - Image Upload & Validation (< MAX_UPLOAD_MB)                          |
+|  - Marketing & Architectural Landing Page (/)                           |
+|  - Image Upload & Validation (/analyze, < MAX_UPLOAD_MB)                |
 |  - Canvas Overlay: Bounding box rendering & confidence threshold slider |
 |  - Evidence Viewer: Visual breakdown of extracted scene features        |
 |  - Assessment Dashboard: Priority badges, hazard alerts, recommendations|

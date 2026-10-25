@@ -2,11 +2,12 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   AppShell,
   Button,
   ImageOverlay,
+  MapView,
   Panel,
   SeverityBadge,
   Spinner,
@@ -50,7 +51,26 @@ function IncidentDetailContent({ id }: { id: string }) {
   };
 
   useEffect(() => {
-    fetchIncident();
+    if (!id) return;
+    let isMounted = true;
+    api
+      .getIncident(id)
+      .then((data) => {
+        if (!isMounted) return;
+        setIncident(data);
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        const msg =
+          err instanceof Error ? err.message : "Failed to load incident record.";
+        setErrorMessage(msg);
+        setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
 
   const handleDelete = async () => {
@@ -100,10 +120,9 @@ function IncidentDetailContent({ id }: { id: string }) {
   };
 
   return (
-    <AppShell>
-      <div className="space-y-6 max-w-7xl mx-auto">
-        {/* Navigation Breadcrumb & Incident Actions */}
-        <div className="border-b border-[#E5E1D8] pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-6 max-w-7xl mx-auto">
+      {/* Navigation Breadcrumb & Incident Actions */}
+      <div className="border-b border-[#E5E1D8] pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link href="/incidents">
               <Button variant="outline" size="sm">
@@ -120,10 +139,21 @@ function IncidentDetailContent({ id }: { id: string }) {
                 )}
               </h1>
               {incident && (
-                <p className="text-xs text-[#6B665C] mt-0.5">
-                  Recorded: {formatTimestamp(incident.created_at)} &bull; Source:{" "}
-                  {incident.origin === "live_analysis" ? "Live Analysis" : "Benchmark Sample"}
-                </p>
+                <div className="flex flex-wrap items-center gap-2 mt-1">
+                  {incident.origin === "sample" ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#FAF0EE] border border-[#B5483A] text-[#B5483A]">
+                      BENCHMARK SAMPLE
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#FAF8F4] border border-[#5B6B3A]/40 text-[#5B6B3A]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#5B6B3A]" />
+                      LIVE ANALYSIS
+                    </span>
+                  )}
+                  <span className="text-xs text-[#6B665C]">
+                    Recorded: {formatTimestamp(incident.created_at)}
+                  </span>
+                </div>
               )}
             </div>
           </div>
@@ -202,9 +232,37 @@ function IncidentDetailContent({ id }: { id: string }) {
           </div>
         )}
 
-        {/* Results Layout (Step 6 components reused) */}
+        {/* Results Layout */}
         {!isLoading && incident && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          <div className="space-y-4">
+            {/* Trust Touch: About This Analysis Collapsible */}
+            <details className="group rounded-md border border-[#E5E1D8] bg-[#FAF8F4] p-3 text-xs transition-colors">
+              <summary className="cursor-pointer font-semibold text-[#1F1D1A] flex items-center justify-between list-none">
+                <span className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#1F1D1A]" />
+                  <span>About this analysis</span>
+                </span>
+                <span className="text-[10px] text-[#6B665C] group-open:rotate-180 transition-transform">
+                  &#9660;
+                </span>
+              </summary>
+              <div className="mt-2.5 pt-2 border-t border-[#E5E1D8] space-y-1.5 text-[#6B665C] leading-relaxed">
+                <p>
+                  <strong className="text-[#1F1D1A]">1. Evidence Only:</strong> The AI reasoning engine evaluates only deterministic mathematical measurements and bounding box coordinates, never receiving raw image pixels.
+                </p>
+                <p>
+                  <strong className="text-[#1F1D1A]">2. Heuristic Limits:</strong> Automated vision detections and posture classifications are heuristics that may be inaccurate, incomplete, or produce false positives.
+                </p>
+                <p>
+                  <strong className="text-[#1F1D1A]">3. User-Entered Location:</strong> All geographic references and location labels are user-entered field notes and do not establish verified real-world satellite GPS coordinates.
+                </p>
+                <p>
+                  <strong className="text-[#1F1D1A]">4. Decision Support Only:</strong> This tool is engineered strictly to assist human responders during triage and does not replace human verification, clinical judgement, or incident command authority.
+                </p>
+              </div>
+            </details>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             {/* Left Column: Visual Detection Evidence with SVG Overlay (7 Cols) */}
             <div className="lg:col-span-7 space-y-4">
               <Panel
@@ -239,15 +297,46 @@ function IncidentDetailContent({ id }: { id: string }) {
 
                 {/* Untrusted User Context (Safely rendered text) */}
                 {(incident.location || incident.user_note) && (
-                  <div className="mt-4 p-3 rounded bg-[#FAF8F4] border border-[#E5E1D8] text-xs text-[#6B665C] space-y-1">
+                  <div className="mt-4 p-3 rounded bg-[#FAF8F4] border border-[#E5E1D8] text-xs text-[#6B665C] space-y-2">
                     {incident.location?.address && (
                       <p>
                         <strong className="text-[#1F1D1A]">Location Reference:</strong>{" "}
                         <span>{incident.location.address}</span>
                       </p>
                     )}
+                    {incident.location?.latitude != null && incident.location?.longitude != null && (
+                      <div className="space-y-1.5 pt-1 border-t border-[#E5E1D8]">
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-xs text-[#1F1D1A] font-semibold">
+                            {incident.location.latitude.toFixed(5)}, {incident.location.longitude.toFixed(5)}
+                          </span>
+                          <span className="text-[10px] font-semibold text-[#5B6B3A] bg-[#F4F6EE] px-1.5 py-0.5 rounded border border-[#D4DCBF] uppercase tracking-wide">
+                            Location entered by user
+                          </span>
+                        </div>
+                        <div className="rounded overflow-hidden border border-[#E5E1D8]">
+                          <MapView
+                            incidents={[
+                              {
+                                id: incident.id,
+                                created_at: incident.created_at,
+                                severity: incident.assessment.urgency_level,
+                                person_count: incident.detection_result.person_count,
+                                location_label: incident.location.address,
+                                latitude: incident.location.latitude,
+                                longitude: incident.location.longitude,
+                                summary: incident.assessment.summary,
+                              },
+                            ]}
+                            initialCenter={[incident.location.longitude, incident.location.latitude]}
+                            initialZoom={14}
+                            height="180px"
+                          />
+                        </div>
+                      </div>
+                    )}
                     {incident.user_note && (
-                      <p>
+                      <p className="pt-1 border-t border-[#E5E1D8]">
                         <strong className="text-[#1F1D1A]">Field Observation Note:</strong>{" "}
                         <span>{incident.user_note}</span>
                       </p>
@@ -326,11 +415,29 @@ function IncidentDetailContent({ id }: { id: string }) {
                         {incident.scene_features.density_category}
                       </span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Thresholds Used:</span>
-                      <span className="font-mono text-[#1F1D1A]">
-                        conf&ge;0.25 &bull; low&lt;0.4 &bull; w/h&ge;1.2
+                    {/* Thresholds Display */}
+                    <div className="pt-1.5 border-t border-[#E5E1D8] space-y-1">
+                      <span className="text-[10px] font-semibold text-[#1F1D1A] uppercase tracking-wider block">
+                        Thresholds Applied
                       </span>
+                      <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[10px] font-mono">
+                        <div className="flex justify-between text-[#6B665C] bg-[#FAF8F4] px-1.5 py-0.5 rounded border border-[#E5E1D8]">
+                          <span>Det Conf:</span>
+                          <span className="text-[#1F1D1A] font-semibold">&ge; 0.25</span>
+                        </div>
+                        <div className="flex justify-between text-[#6B665C] bg-[#FAF8F4] px-1.5 py-0.5 rounded border border-[#E5E1D8]">
+                          <span>Low Conf:</span>
+                          <span className="text-[#1F1D1A] font-semibold">&lt; 0.40</span>
+                        </div>
+                        <div className="flex justify-between text-[#6B665C] bg-[#FAF8F4] px-1.5 py-0.5 rounded border border-[#E5E1D8]">
+                          <span>Prone (w/h):</span>
+                          <span className="text-[#1F1D1A] font-semibold">&ge; 1.20</span>
+                        </div>
+                        <div className="flex justify-between text-[#6B665C] bg-[#FAF8F4] px-1.5 py-0.5 rounded border border-[#E5E1D8]">
+                          <span>Edge Margin:</span>
+                          <span className="text-[#1F1D1A] font-semibold">5px (max 1)</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -339,7 +446,7 @@ function IncidentDetailContent({ id }: { id: string }) {
                     <div className="flex items-center justify-between text-[11px] font-semibold text-[#1F1D1A]">
                       <span>Detected Person Boxes</span>
                       <span className="text-[10px] text-[#6B665C]">
-                        Hover or click to inspect
+                        Keyboard &bull; Enter to select
                       </span>
                     </div>
 
@@ -348,7 +455,11 @@ function IncidentDetailContent({ id }: { id: string }) {
                         No person bounding boxes detected in visual frame.
                       </p>
                     ) : (
-                      <div className="max-h-40 overflow-y-auto space-y-1 pr-1">
+                      <div
+                        role="region"
+                        aria-label="Detected person bounding boxes"
+                        className="max-h-40 overflow-y-auto space-y-1 pr-1"
+                      >
                         {incident.detection_result.detections.map((det) => {
                           const isHoriz =
                             incident.scene_features.horizontal_candidates.includes(
@@ -360,6 +471,18 @@ function IncidentDetailContent({ id }: { id: string }) {
                           return (
                             <div
                               key={det.id}
+                              tabIndex={0}
+                              role="button"
+                              aria-label={`Select detection ${det.id}, confidence ${Math.round(det.confidence * 100)}%, aspect ratio ${det.aspect_ratio.toFixed(2)}${isHoriz ? ", prone candidate" : ""}`}
+                              aria-pressed={isSelected}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  setSelectedDetectionId(
+                                    isSelected ? null : det.id
+                                  );
+                                }
+                              }}
                               onClick={() =>
                                 setSelectedDetectionId(
                                   isSelected ? null : det.id
@@ -367,7 +490,7 @@ function IncidentDetailContent({ id }: { id: string }) {
                               }
                               onMouseEnter={() => setHoveredDetectionId(det.id)}
                               onMouseLeave={() => setHoveredDetectionId(null)}
-                              className={`flex items-center justify-between p-1.5 rounded cursor-pointer transition-colors text-[11px] ${
+                              className={`flex items-center justify-between p-1.5 rounded cursor-pointer transition-colors text-[11px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B5483A] ${
                                 isSelected
                                   ? "bg-[#FAF0EE] border border-[#B5483A] text-[#B5483A] font-medium"
                                   : isHovered
@@ -565,9 +688,9 @@ function IncidentDetailContent({ id }: { id: string }) {
               </Panel>
             </div>
           </div>
+        </div>
         )}
       </div>
-    </AppShell>
   );
 }
 
@@ -586,18 +709,18 @@ export default function IncidentDetailPage({
   params: Promise<{ id: string }>;
 }) {
   return (
-    <React.Suspense
-      fallback={
-        <AppShell>
+    <AppShell>
+      <React.Suspense
+        fallback={
           <div className="py-24 flex flex-col items-center justify-center gap-3 text-xs text-[#6B665C]">
             <Spinner size="md" />
             <span>Loading incident details...</span>
           </div>
-        </AppShell>
-      }
-    >
-      <IncidentDetailLoader params={params} />
-    </React.Suspense>
+        }
+      >
+        <IncidentDetailLoader params={params} />
+      </React.Suspense>
+    </AppShell>
   );
 }
 

@@ -7,4 +7,6 @@ export { EmptyState } from "./EmptyState";
 export { Spinner } from "./Spinner";
 export { BackendStatus } from "./BackendStatus";
 export { ImageOverlay } from "./ImageOverlay";
+export { MapView } from "./map";
+export type { MapIncidentItem, MapViewProps } from "./map";
 

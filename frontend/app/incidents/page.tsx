@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   AppShell,
   Button,
   EmptyState,
+  MapView,
   Panel,
   SeverityBadge,
   Spinner,
@@ -19,6 +20,27 @@ export default function IncidentsPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isLoadingSample, setIsLoadingSample] = useState(false);
+  const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
+  const [flyToLocation, setFlyToLocation] = useState<{ lat: number; lng: number; zoom?: number } | null>(null);
+  const rowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
+
+  const handleRowClick = (item: IncidentListItem) => {
+    setSelectedIncidentId(item.id);
+    if (
+      item.location &&
+      typeof item.location.latitude === "number" &&
+      typeof item.location.longitude === "number" &&
+      !isNaN(item.location.latitude) &&
+      !isNaN(item.location.longitude)
+    ) {
+      setFlyToLocation({
+        lat: item.location.latitude,
+        lng: item.location.longitude,
+        zoom: 14,
+      });
+    }
+  };
 
   const fetchIncidents = async () => {
     setIsLoading(true);
@@ -45,7 +67,31 @@ export default function IncidentsPage() {
   };
 
   useEffect(() => {
-    fetchIncidents();
+    let isMounted = true;
+    api
+      .listIncidents()
+      .then((data) => {
+        if (!isMounted) return;
+        const sorted = [...data].sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        setIncidents(sorted);
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        const msg =
+          err instanceof Error
+            ? err.message
+            : "Failed to load incidents registry from backend.";
+        setErrorMessage(msg);
+        setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleDelete = async (id: string) => {
@@ -59,6 +105,33 @@ export default function IncidentsPage() {
       setErrorMessage(msg);
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleLoadSampleIncident = async () => {
+    setIsLoadingSample(true);
+    setErrorMessage(null);
+    try {
+      const sample = await api.loadSample("sample_people_crowd");
+      setIncidents((prev) => [
+        {
+          id: sample.id,
+          created_at: sample.created_at,
+          origin: sample.origin || "sample",
+          severity: sample.assessment.urgency_level,
+          urgency_level: sample.assessment.urgency_level,
+          category: sample.assessment.category,
+          person_count: sample.detection_result.person_count,
+          location_label: sample.location?.address,
+          summary: sample.assessment.summary,
+        },
+        ...prev,
+      ]);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to load sample incident.";
+      setErrorMessage(msg);
+    } finally {
+      setIsLoadingSample(false);
     }
   };
 
@@ -78,6 +151,30 @@ export default function IncidentsPage() {
       return iso;
     }
   };
+
+  const mappedIncidents = incidents
+    .filter(
+      (item) =>
+        item.location &&
+        typeof item.location.latitude === "number" &&
+        typeof item.location.longitude === "number" &&
+        !isNaN(item.location.latitude) &&
+        !isNaN(item.location.longitude) &&
+        item.location.latitude >= -90 &&
+        item.location.latitude <= 90 &&
+        item.location.longitude >= -180 &&
+        item.location.longitude <= 180
+    )
+    .map((item) => ({
+      id: item.id,
+      created_at: item.created_at,
+      severity: item.severity || item.urgency_level || "UNKNOWN",
+      person_count: item.person_count,
+      location_label: item.location_label || item.location?.address,
+      latitude: item.location!.latitude!,
+      longitude: item.location!.longitude!,
+      summary: item.summary,
+    }));
 
   return (
     <AppShell>
@@ -102,7 +199,7 @@ export default function IncidentsPage() {
             >
               Refresh
             </Button>
-            <Link href="/">
+            <Link href="/analyze">
               <Button variant="primary" size="sm">
                 Start New Analysis
               </Button>
@@ -131,6 +228,33 @@ export default function IncidentsPage() {
           </div>
         )}
 
+        {/* Geospatial Registry Map Panel */}
+        <Panel
+          title="Incident Geospatial Registry"
+          subtitle="Showing recorded incidents with user-entered coordinates (detection does not establish real-world position)"
+          action={
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-mono text-[#6B665C] bg-[#FAF8F4] px-2.5 py-0.5 rounded border border-[#E5E1D8]">
+                {mappedIncidents.length} Mapped &bull; {incidents.length - mappedIncidents.length} No Location
+              </span>
+            </div>
+          }
+        >
+          <MapView
+            incidents={mappedIncidents}
+            selectedIncidentId={selectedIncidentId}
+            onSelectIncident={(id) => {
+              setSelectedIncidentId(id);
+              const targetRow = rowRefs.current[id];
+              if (targetRow) {
+                targetRow.scrollIntoView({ behavior: "smooth", block: "nearest" });
+              }
+            }}
+            flyToLocation={flyToLocation}
+            height="320px"
+          />
+        </Panel>
+
         {/* Main Incidents Table Panel */}
         <Panel
           title="Persisted Incident Records"
@@ -151,13 +275,30 @@ export default function IncidentsPage() {
             <div className="py-12 px-4">
               <EmptyState
                 title="No incident records found"
-                description="No field imagery has been processed yet. Upload and analyze an image to automatically store a structured triage record."
+                description="No field imagery has been processed yet. Upload and analyze an image or run genuine inference on benchmark evaluation imagery."
                 action={
-                  <Link href="/">
-                    <Button variant="secondary" size="sm">
-                      Go to Analyze Workflow
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      disabled={isLoadingSample}
+                      onClick={handleLoadSampleIncident}
+                    >
+                      {isLoadingSample ? (
+                        <span className="flex items-center gap-1.5">
+                          <Spinner size="sm" />
+                          <span>Running Pipeline...</span>
+                        </span>
+                      ) : (
+                        "Load Benchmark Sample"
+                      )}
                     </Button>
-                  </Link>
+                    <Link href="/">
+                      <Button variant="outline" size="sm">
+                        Analyze Field Image
+                      </Button>
+                    </Link>
+                  </div>
                 }
               />
             </div>
@@ -180,36 +321,52 @@ export default function IncidentsPage() {
                     const isConfirming = confirmDeleteId === item.id;
                     const urgency = item.severity || item.urgency_level || "UNKNOWN";
                     const isLive = item.origin === "live_analysis";
+                    const isSelected = selectedIncidentId === item.id;
+                    const hasLocation =
+                      item.location &&
+                      typeof item.location.latitude === "number" &&
+                      typeof item.location.longitude === "number" &&
+                      !isNaN(item.location.latitude) &&
+                      !isNaN(item.location.longitude);
 
                     return (
                       <tr
                         key={item.id}
-                        className="hover:bg-[#FAF8F4]/80 transition-colors"
+                        ref={(el) => {
+                          rowRefs.current[item.id] = el;
+                        }}
+                        onClick={() => handleRowClick(item)}
+                        className={`transition-colors cursor-pointer ${
+                          isSelected
+                            ? "bg-[#FAF0EE] border-l-4 border-l-[#1F1D1A]"
+                            : "hover:bg-[#FAF8F4]/80"
+                        }`}
                       >
                         {/* Timestamp */}
-                        <td className="py-3 px-4 font-mono text-[11px] text-[#1F1D1A] whitespace-nowrap">
-                          {formatTimestamp(item.created_at)}
+                        <td className="py-3 px-4 font-mono text-[11px] whitespace-nowrap">
+                          <Link
+                            href={`/incidents/${encodeURIComponent(item.id)}`}
+                            className="text-[#1F1D1A] hover:underline"
+                          >
+                            {formatTimestamp(item.created_at)}
+                          </Link>
                         </td>
 
                         {/* Origin Badge */}
                         <td className="py-3 px-4 whitespace-nowrap">
-                          <span
-                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono ${
-                              isLive
-                                ? "bg-[#FAF8F4] border border-[#E5E1D8] text-[#1F1D1A]"
-                                : "bg-[#F3F2F0] border border-[#8A857A]/40 text-[#6B665C]"
-                            }`}
-                          >
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full ${
-                                isLive ? "bg-[#5B6B3A]" : "bg-[#8A857A]"
-                              }`}
-                            />
-                            {isLive ? "Live analysis" : "Sample"}
-                          </span>
+                          {isLive ? (
+                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono bg-[#FAF8F4] border border-[#E5E1D8] text-[#1F1D1A]">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#5B6B3A]" />
+                              <span>Live Analysis</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#FAF0EE] border border-[#B5483A] text-[#B5483A]">
+                              SAMPLE
+                            </span>
+                          )}
                         </td>
 
-                        {/* Severity Badge (Only color accent) */}
+                        {/* Severity Badge */}
                         <td className="py-3 px-4 whitespace-nowrap">
                           <SeverityBadge level={urgency} />
                         </td>
@@ -227,12 +384,34 @@ export default function IncidentsPage() {
                           </span>
                         </td>
 
-                        {/* Location Label (Untrusted text rendered safely) */}
-                        <td className="py-3 px-4 text-[#1F1D1A] max-w-[200px] truncate">
-                          {item.location_label ? (
-                            <span>{item.location_label}</span>
+                        {/* Location Label (Untrusted text rendered safely with tooltip) */}
+                        <td
+                          className="py-3 px-4 text-[#1F1D1A] max-w-[220px]"
+                          title={item.location_label || undefined}
+                        >
+                          {hasLocation ? (
+                            <div className="space-y-0.5">
+                              <span className="font-medium truncate block">
+                                {item.location_label || item.location?.address || "Pinned Site"}
+                              </span>
+                              <div className="flex items-center gap-1.5 text-[10px] text-[#6B665C]">
+                                <span className="font-mono">
+                                  {item.location!.latitude!.toFixed(4)}, {item.location!.longitude!.toFixed(4)}
+                                </span>
+                                <span className="text-[9px] uppercase font-semibold text-[#5B6B3A] bg-[#F4F6EE] px-1 py-0.2 rounded border border-[#D4DCBF]">
+                                  User-entered
+                                </span>
+                              </div>
+                            </div>
                           ) : (
-                            <span className="text-[#8A857A] italic">—</span>
+                            <div className="space-y-0.5">
+                              {item.location_label && (
+                                <span className="truncate block">{item.location_label}</span>
+                              )}
+                              <span className="inline-flex items-center gap-1 text-[10px] text-[#8A857A] bg-[#F3F2F0] px-1.5 py-0.5 rounded border border-[#DDD9D2]">
+                                No location
+                              </span>
+                            </div>
                           )}
                         </td>
 

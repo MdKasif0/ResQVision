@@ -27,6 +27,7 @@ from app.schemas import (
     IncidentSummary,
     Location,
     ReasonDebugRequest,
+    TranscribeResponse,
 )
 from app.services.detector import detector
 from app.services.features import compute_scene_features
@@ -34,6 +35,7 @@ from app.services.image_validator import validate_and_process_image
 from app.services.reasoner import assess
 from app.services.store import (
     delete_incident,
+    get_data_dir,
     get_incident,
     get_uploads_dir,
     list_incidents,
@@ -220,10 +222,11 @@ async def detect_endpoint(file: UploadFile = File(...)):
 )
 async def analyze_endpoint(
     file: UploadFile = File(...),
-    lat: Optional[float] = Form(None),
-    lng: Optional[float] = Form(None),
+    lat: Optional[float] = Form(None, ge=-90.0, le=90.0),
+    lng: Optional[float] = Form(None, ge=-180.0, le=180.0),
     location_label: Optional[str] = Form(None),
     note: Optional[str] = Form(None),
+    origin: Optional[str] = Form("live_analysis"),
 ):
     """
     Primary user journey pipeline:
@@ -237,6 +240,18 @@ async def analyze_endpoint(
     8. Return Incident with timing metrics {detect_ms, reason_ms, total_ms}.
     """
     overall_start = time.perf_counter()
+
+    # Coordinate validation
+    if lat is not None and not (-90.0 <= lat <= 90.0):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Latitude must be between -90 and 90 degrees.",
+        )
+    if lng is not None and not (-180.0 <= lng <= 180.0):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Longitude must be between -180 and 180 degrees.",
+        )
 
     # Input length limits
     if location_label and len(location_label) > 200:
@@ -294,6 +309,7 @@ async def analyze_endpoint(
         )
 
     # 8. Build Incident record
+    origin_val = "sample" if origin == "sample" else "live_analysis"
     incident = Incident(
         id=incident_id,
         created_at=datetime.now(timezone.utc).isoformat(),
@@ -305,7 +321,7 @@ async def analyze_endpoint(
         scene_features=scene_features,
         assessment=assessment,
         location=location,
-        origin="live_analysis",
+        origin=origin_val,
         user_note=note,
         timing={
             "detect_ms": detect_ms,
@@ -328,6 +344,288 @@ async def analyze_endpoint(
 
     return incident
 
+
+
+# ---------------------------------------------------------------------------
+# Benchmark Sample Endpoints
+# ---------------------------------------------------------------------------
+
+SAMPLE_REGISTRY = [
+    {
+        "id": "sample_people_crowd",
+        "filename": "sample_people_crowd.jpg",
+        "name": "Crowd Scene (Urban)",
+        "description": "Multi-person benchmark verifying spatial clustering, quadrant density, and coverage ratio.",
+        "expected_persons": 4,
+    },
+    {
+        "id": "sample_person_single",
+        "filename": "sample_person_single.jpg",
+        "name": "Search & Rescue Scene",
+        "description": "Field search benchmark verifying prone posture detection and aspect ratio classification.",
+        "expected_persons": 2,
+    },
+    {
+        "id": "sample_empty_landscape",
+        "filename": "sample_empty_landscape.jpg",
+        "name": "Empty Terrain (Wildland)",
+        "description": "Aerial terrain benchmark verifying zero false-positive detection edge case.",
+        "expected_persons": 0,
+    },
+]
+
+
+def get_samples_dir() -> Path:
+    """Resolve data/samples directory safely."""
+    data_dir = get_data_dir()
+    samples_dir = (data_dir / "samples").resolve()
+    return samples_dir
+
+
+@app.get(
+    "/api/samples",
+    tags=["Samples"],
+    summary="List curated benchmark evaluation samples",
+)
+async def list_samples_endpoint():
+    """Return available benchmark sample imagery with metadata."""
+    samples_dir = get_samples_dir()
+    available = []
+    for s in SAMPLE_REGISTRY:
+        path = samples_dir / s["filename"]
+        available.append({
+            **s,
+            "available": path.exists() and path.is_file(),
+        })
+    return available
+
+
+@app.get(
+    "/api/samples/{sample_id}/image",
+    tags=["Samples"],
+    summary="Stream benchmark sample image",
+)
+async def get_sample_image_endpoint(sample_id: str):
+    """Stream a benchmark sample image by ID."""
+    clean_id = Path(sample_id).name.replace(".jpg", "")
+    sample_entry = next((s for s in SAMPLE_REGISTRY if s["id"] == clean_id), None)
+    if not sample_entry:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Sample '{sample_id}' not found.",
+        )
+    samples_dir = get_samples_dir()
+    sample_path = (samples_dir / sample_entry["filename"]).resolve()
+    if not str(sample_path).startswith(str(samples_dir)) or not sample_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Sample file '{sample_entry['filename']}' not found on disk.",
+        )
+    return FileResponse(
+        path=str(sample_path),
+        media_type="image/jpeg",
+        filename=sample_entry["filename"],
+    )
+
+
+@app.post(
+    "/api/samples/{sample_id}/load",
+    response_model=Incident,
+    tags=["Samples"],
+    summary="Execute real inference pipeline on curated benchmark sample image",
+)
+async def load_sample_endpoint(sample_id: str):
+    """
+    Executes the REAL vision and reasoning pipeline on a benchmark sample:
+    1. Loads sample image from data/samples/.
+    2. Runs YOLO person detection.
+    3. Computes deterministic scene features.
+    4. Executes evidentiary assessment.
+    5. Stores Incident in local registry with origin='sample'.
+    6. Returns full Incident.
+    """
+    clean_id = Path(sample_id).name.replace(".jpg", "")
+    sample_entry = next((s for s in SAMPLE_REGISTRY if s["id"] == clean_id), None)
+    if not sample_entry:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Sample '{sample_id}' not found. Available samples: {[s['id'] for s in SAMPLE_REGISTRY]}",
+        )
+
+    samples_dir = get_samples_dir()
+    sample_path = (samples_dir / sample_entry["filename"]).resolve()
+    if not str(sample_path).startswith(str(samples_dir)) or not sample_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Sample image '{sample_entry['filename']}' missing from disk.",
+        )
+
+    if not detector.is_loaded():
+        raise ModelNotLoadedException("YOLO detection model is not loaded. Service unavailable.")
+
+    overall_start = time.perf_counter()
+
+    try:
+        from PIL import Image, ImageOps
+        pil_img = Image.open(sample_path)
+        pil_img = ImageOps.exif_transpose(pil_img)
+        if pil_img.mode != "RGB":
+            pil_img = pil_img.convert("RGB")
+        if max(pil_img.width, pil_img.height) > 1920:
+            pil_img.thumbnail((1920, 1920), Image.Resampling.LANCZOS)
+    except Exception as exc:
+        logger.error("Failed to load sample image %s: %s", sample_path, exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to read benchmark sample image.",
+        )
+
+    incident_id = str(uuid.uuid4())
+    img_width, img_height = pil_img.size
+
+    # Save image to data/uploads/{incident_id}.jpg
+    try:
+        uploads_dir = get_uploads_dir()
+        save_path = uploads_dir / f"{incident_id}.jpg"
+        pil_img.save(save_path, format="JPEG", quality=90)
+    except Exception as exc:
+        logger.warning("Could not stage sample image under uploads/%s: %s", incident_id, exc)
+
+    # Real YOLO person detection
+    t_det_start = time.perf_counter()
+    detection_result = await run_in_threadpool(
+        detector.detect, pil_img, incident_id
+    )
+    detect_ms = round((time.perf_counter() - t_det_start) * 1000.0, 2)
+
+    # Deterministic scene features
+    scene_features = compute_scene_features(detection_result)
+
+    # Evidentiary assessment via Groq / rules fallback
+    t_reason_start = time.perf_counter()
+    assessment, source = assess(
+        detection_result=detection_result,
+        features=scene_features,
+        note=f"Benchmark sample: {sample_entry['name']}",
+        location_label="Benchmark Dataset (Curated)",
+    )
+    reason_ms = round((time.perf_counter() - t_reason_start) * 1000.0, 2)
+    total_ms = round((time.perf_counter() - overall_start) * 1000.0, 2)
+
+    incident = Incident(
+        id=incident_id,
+        created_at=datetime.now(timezone.utc).isoformat(),
+        image_filename=f"{incident_id}.jpg",
+        original_filename=sample_entry["filename"],
+        image_width=img_width,
+        image_height=img_height,
+        detection_result=detection_result,
+        scene_features=scene_features,
+        assessment=assessment,
+        location=Location(
+            latitude=None,
+            longitude=None,
+            address="Benchmark Evaluation Dataset",
+            source="user_entered",
+        ),
+        origin="sample",
+        user_note=f"Benchmark sample ({sample_entry['name']}): {sample_entry['description']}",
+        timing={
+            "detect_ms": detect_ms,
+            "reason_ms": reason_ms,
+            "total_ms": total_ms,
+        },
+    )
+
+    save_incident(incident)
+
+    logger.info(
+        "Sample incident %s created for %s (persons: %d, urgency: %s, total: %.1fms)",
+        incident_id,
+        sample_entry["id"],
+        detection_result.person_count,
+        assessment.urgency_level,
+        total_ms,
+    )
+
+    return incident
+
+
+# ---------------------------------------------------------------------------
+# Audio Transcription (Voice Notes) Endpoint
+# ---------------------------------------------------------------------------
+
+MAX_AUDIO_SIZE_BYTES = 10 * 1024 * 1024  # 10MB cap
+
+
+@app.post(
+    "/api/transcribe",
+    response_model=TranscribeResponse,
+    tags=["Audio"],
+    summary="Transcribe field voice notes using Groq whisper-large-v3-turbo",
+    responses={
+        400: {"model": ErrorBody},
+        413: {"model": ErrorBody},
+        503: {"model": ErrorBody},
+    },
+)
+async def transcribe_endpoint(file: UploadFile = File(...)):
+    """
+    Transcribes audio notes for emergency field responders using Groq whisper-large-v3-turbo.
+    Caps payload at 10MB, handles unconfigured Groq keys and network errors gracefully.
+    """
+    if not settings.is_groq_configured:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Voice transcription service unavailable. GROQ_API_KEY is not configured.",
+        )
+
+    # Read audio bytes up to MAX_AUDIO_SIZE_BYTES + 1
+    chunks = []
+    total = 0
+    while True:
+        chunk = await file.read(64 * 1024)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > MAX_AUDIO_SIZE_BYTES:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="Audio file exceeds maximum allowed limit of 10MB.",
+            )
+        chunks.append(chunk)
+
+    audio_bytes = b"".join(chunks)
+    if len(audio_bytes) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Audio recording is empty (0 bytes).",
+        )
+
+    filename = file.filename or "recording.webm"
+
+    try:
+        import groq
+
+        client = groq.Groq(api_key=settings.GROQ_API_KEY, timeout=25.0)
+
+        def _run_transcription():
+            return client.audio.transcriptions.create(
+                file=(filename, audio_bytes),
+                model="whisper-large-v3-turbo",
+                response_format="json",
+            )
+
+        transcription = await run_in_threadpool(_run_transcription)
+        text = getattr(transcription, "text", str(transcription)).strip()
+
+        return TranscribeResponse(text=text)
+    except Exception as exc:
+        logger.error("Audio transcription failed: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Audio transcription failed: {str(exc)}",
+        )
 
 
 # Dev-only debugging endpoint for reasoning service
@@ -391,6 +689,7 @@ async def list_incidents_endpoint(limit: int = 50, offset: int = 0):
                 person_count=inc.detection_result.person_count,
                 location_label=loc_label,
                 summary=inc.assessment.summary,
+                location=inc.location,
             )
         )
     return summaries
@@ -436,6 +735,18 @@ async def get_incident_image_endpoint(incident_id: str):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Image asset not found.",
         )
+
+    if not img_path.exists() or not img_path.is_file():
+        # Fallback to incident.image_filename if present
+        incident = get_incident(valid_id)
+        if incident and incident.image_filename:
+            custom_path = (uploads_dir / Path(incident.image_filename).name).resolve()
+            if (
+                str(custom_path).startswith(str(uploads_dir))
+                and custom_path.exists()
+                and custom_path.is_file()
+            ):
+                img_path = custom_path
 
     if not img_path.exists() or not img_path.is_file():
         raise HTTPException(

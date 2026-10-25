@@ -26,8 +26,8 @@
 @layer base {
   html,
   body {
-    background-color: #0A0D14;
-    color: #FFFFFF;
+    background-color: #FAF8F4;
+    color: #1F1D1A;
     font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -57,3 +57,96 @@
   outline: 2px solid #1F1D1A;
   outline-offset: 2px;
 }
+
+/* Scoped Landing Page Design Tokens (Dark & Cinematic) */
+.landing-root {
+  --lp-bg: #060c14;
+  --lp-bg-subtle: #08131d;
+  --lp-surface: #0b1724;
+  --lp-surface-elevated: #0e1d2d;
+  --lp-surface-hover: #132438;
+  --lp-border: rgba(255, 255, 255, 0.08);
+  --lp-border-subtle: rgba(255, 255, 255, 0.05);
+  --lp-border-hover: rgba(255, 255, 255, 0.16);
+  --lp-border-accent: rgba(255, 87, 81, 0.35);
+
+  /* Brand Accents sampled from design */
+  --lp-coral: #ff5751;
+  --lp-coral-hover: #ff6e68;
+  --lp-coral-surface: rgba(255, 87, 81, 0.12);
+  --lp-coral-border: rgba(255, 87, 81, 0.35);
+  --lp-orange: #ff8863;
+  --lp-teal: #38e1ff;
+  --lp-teal-surface: rgba(56, 225, 255, 0.12);
+  --lp-teal-border: rgba(56, 225, 255, 0.35);
+  --lp-green: #3df0c2;
+  --lp-green-surface: rgba(61, 240, 194, 0.12);
+  --lp-green-border: rgba(61, 240, 194, 0.35);
+  --lp-amber: #fbaa24;
+  --lp-amber-surface: rgba(251, 170, 36, 0.12);
+  --lp-amber-border: rgba(251, 170, 36, 0.35);
+  --lp-blue: #3b82f6;
+  --lp-blue-surface: rgba(59, 130, 246, 0.12);
+  --lp-blue-border: rgba(59, 130, 246, 0.35);
+
+  /* Typography & Neutral */
+  --lp-text-primary: #ffffff;
+  --lp-text-secondary: #94a3b8;
+  --lp-text-muted: #64748b;
+
+  color-scheme: dark;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.landing-root) {
+    scroll-behavior: smooth;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   MapLibre GL JS Design System Overrides (Ivory surface, charcoal text)
+   --------------------------------------------------------------------------- */
+
+.resq-map-popup .maplibregl-popup-content {
+  background-color: #FAF8F4 !important;
+  color: #1F1D1A !important;
+  border: 1px solid #E5E1D8 !important;
+  border-radius: 6px !important;
+  box-shadow: 0 4px 16px rgba(31, 29, 26, 0.15) !important;
+  padding: 10px 12px !important;
+}
+
+.resq-map-popup .maplibregl-popup-tip {
+  border-top-color: #FAF8F4 !important;
+  border-bottom-color: #FAF8F4 !important;
+}
+
+.resq-map-popup .maplibregl-popup-close-button {
+  color: #6B665C !important;
+  font-size: 16px !important;
+  padding: 2px 6px !important;
+  top: 4px !important;
+  right: 4px !important;
+  border-radius: 4px !important;
+}
+
+.resq-map-popup .maplibregl-popup-close-button:hover {
+  background-color: #E5E1D8 !important;
+  color: #1F1D1A !important;
+}
+
+.maplibregl-ctrl-attrib {
+  background-color: rgba(250, 248, 244, 0.9) !important;
+  color: #6B665C !important;
+  font-size: 10px !important;
+  border-radius: 4px 0 0 0 !important;
+  border-top: 1px solid #E5E1D8 !important;
+  border-left: 1px solid #E5E1D8 !important;
+  padding: 2px 6px !important;
+}
+
+.maplibregl-ctrl-attrib a {
+  color: #1F1D1A !important;
+  text-decoration: underline !important;
+}
+

@@ -62,7 +62,21 @@ class YOLODetectorService:
 
                 logger.info(f"Loading YOLO weights from {self.model_path} on device '{self.device}'...")
                 model = YOLO(str(self.model_path))
-                # Validate model loading with a warm-up check
+                # Warm up model with a dummy inference to eliminate first-request cold start latency
+                try:
+                    dummy_img = Image.new("RGB", (self.imgsz, self.imgsz), (0, 0, 0))
+                    model.predict(
+                        source=dummy_img,
+                        imgsz=self.imgsz,
+                        classes=self.classes,
+                        conf=self.conf,
+                        device=self.device,
+                        verbose=False,
+                    )
+                    logger.info("YOLO model warmed up successfully.")
+                except Exception as warm_exc:
+                    logger.warning(f"Model warm-up encountered non-fatal error: {warm_exc}")
+
                 self._model = model
                 logger.info("YOLO person detector model loaded successfully.")
             except Exception as exc:

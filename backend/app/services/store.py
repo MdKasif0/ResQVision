@@ -56,10 +56,15 @@ def _read_incidents_unlocked(file_path: Path) -> List[Incident]:
     """
     Read and parse incidents from incidents.json.
     Must be called within _LOCK.
-    If file is missing: returns empty list.
-    If file is corrupt: renames to incidents.corrupt.<timestamp>.json, logs warning, returns empty list.
+    If file is missing: creates empty file and returns empty list.
+    If file is corrupt: renames to incidents.corrupt.<timestamp>.json, logs warning,
+    starts fresh with empty file, and returns empty list.
     """
     if not file_path.exists():
+        try:
+            _write_incidents_unlocked(file_path, [])
+        except Exception as init_err:
+            logger.warning("Could not initialize missing incidents file %s: %s", file_path, init_err)
         return []
 
     try:
@@ -95,6 +100,12 @@ def _read_incidents_unlocked(file_path: Path) -> List[Incident]:
             file_path.rename(corrupt_path)
         except Exception as rename_err:
             logger.error("Failed to rename corrupt incidents file: %s", rename_err)
+
+        # Start fresh with a new empty incidents file
+        try:
+            _write_incidents_unlocked(file_path, [])
+        except Exception as fresh_err:
+            logger.warning("Could not initialize fresh incidents file %s: %s", file_path, fresh_err)
 
         return []
 
@@ -160,13 +171,17 @@ def save_incident(incident: Incident) -> None:
             incidents = incidents[:MAX_INCIDENTS]
             uploads_dir = get_uploads_dir()
             for t in trimmed:
-                img_path = uploads_dir / f"{t.id}.jpg"
-                if img_path.exists():
-                    try:
-                        img_path.unlink()
-                        logger.info("Trimmed old incident image: %s", img_path)
-                    except Exception as unlink_err:
-                        logger.warning("Could not delete trimmed image %s: %s", img_path, unlink_err)
+                target_files = {f"{t.id}.jpg"}
+                if getattr(t, "image_filename", None):
+                    target_files.add(t.image_filename)
+                for fname in target_files:
+                    img_path = uploads_dir / fname
+                    if img_path.exists():
+                        try:
+                            img_path.unlink()
+                            logger.info("Trimmed old incident image: %s", img_path)
+                        except Exception as unlink_err:
+                            logger.warning("Could not delete trimmed image %s: %s", img_path, unlink_err)
 
         _write_incidents_unlocked(file_path, incidents)
         logger.info("Incident %s persisted successfully (total stored: %d)", incident.id, len(incidents))
@@ -202,9 +217,11 @@ def delete_incident(incident_id: str) -> bool:
         incidents = _read_incidents_unlocked(file_path)
 
         target_index = -1
+        target_incident = None
         for idx, inc in enumerate(incidents):
             if inc.id == incident_id:
                 target_index = idx
+                target_incident = inc
                 break
 
         if target_index == -1:
@@ -215,13 +232,18 @@ def delete_incident(incident_id: str) -> bool:
 
         # Delete associated image file from data/uploads/
         uploads_dir = get_uploads_dir()
-        img_path = uploads_dir / f"{incident_id}.jpg"
-        if img_path.exists():
-            try:
-                img_path.unlink()
-                logger.info("Deleted image asset for incident %s", incident_id)
-            except Exception as exc:
-                logger.warning("Could not delete image asset %s: %s", img_path, exc)
+        target_files = {f"{incident_id}.jpg"}
+        if target_incident and getattr(target_incident, "image_filename", None):
+            target_files.add(target_incident.image_filename)
+
+        for fname in target_files:
+            img_path = uploads_dir / fname
+            if img_path.exists():
+                try:
+                    img_path.unlink()
+                    logger.info("Deleted image asset for incident %s: %s", incident_id, fname)
+                except Exception as exc:
+                    logger.warning("Could not delete image asset %s: %s", img_path, exc)
 
         logger.info("Incident %s deleted from store (remaining: %d)", incident_id, len(incidents))
         return True

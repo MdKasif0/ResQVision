@@ -147,8 +147,8 @@ class SceneFeatures(BaseModel):
 
 class Location(BaseModel):
     """Location metadata. Detection alone never establishes real-world position."""
-    latitude: Optional[float] = Field(default=None, description="GPS latitude")
-    longitude: Optional[float] = Field(default=None, description="GPS longitude")
+    latitude: Optional[float] = Field(default=None, ge=-90.0, le=90.0, description="GPS latitude")
+    longitude: Optional[float] = Field(default=None, ge=-180.0, le=180.0, description="GPS longitude")
     address: Optional[str] = Field(default=None, description="User supplied address or landmark")
     source: Literal["user_entered"] = Field(
         default="user_entered",
@@ -265,6 +265,10 @@ class ReasonDebugRequest(BaseModel):
 
 
 
+class TranscribeResponse(BaseModel):
+    text: str = Field(..., description="Transcribed speech text")
+
+
 class IncidentSummary(BaseModel):
     id: str = Field(..., description="Unique incident UUIDv4")
     created_at: str = Field(..., description="ISO 8601 UTC timestamp")
@@ -275,6 +279,7 @@ class IncidentSummary(BaseModel):
     person_count: int = Field(..., ge=0, description="Number of detected persons")
     location_label: Optional[str] = Field(default=None, description="Location label / reference if any")
     summary: Optional[str] = Field(default=None, description="Executive summary")
+    location: Optional[Location] = Field(default=None, description="User-entered location metadata")
 
 
 IncidentListItem = IncidentSummary

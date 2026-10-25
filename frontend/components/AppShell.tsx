@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { Suspense } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BackendStatus } from "./BackendStatus";
@@ -9,16 +9,65 @@ interface AppShellProps {
   children: React.ReactNode;
 }
 
-export function AppShell({ children }: AppShellProps) {
+const navItems = [
+  { label: "Analyze", href: "/analyze" },
+  { label: "Incidents", href: "/incidents" },
+  { label: "Live Map", href: "/map" },
+];
+
+function NavLinks() {
   const pathname = usePathname();
 
-  const navItems = [
-    { label: "Analyze", href: "/" },
-    { label: "Incidents", href: "/incidents" },
-    { label: "Live Map", href: "/map" },
-  ];
+  return (
+    <nav
+      aria-label="Main Navigation"
+      className="flex items-center gap-1 sm:gap-2"
+    >
+      {navItems.map((item) => {
+        const isActive =
+          item.href === "/analyze"
+            ? pathname === "/analyze" || pathname === "/"
+            : pathname?.startsWith(item.href);
 
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            aria-current={isActive ? "page" : undefined}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-[#1F1D1A] focus-visible:outline-offset-2 ${
+              isActive
+                ? "bg-[#1F1D1A] !text-[#FFFFFF]"
+                : "text-[#6B665C] hover:text-[#1F1D1A] hover:bg-[#FAF8F4]"
+            }`}
+          >
+            {item.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
 
+function NavLinksFallback() {
+  return (
+    <nav
+      aria-label="Main Navigation"
+      className="flex items-center gap-1 sm:gap-2"
+    >
+      {navItems.map((item) => (
+        <Link
+          key={item.href}
+          href={item.href}
+          className="px-3 py-1.5 rounded-md text-xs font-medium text-[#6B665C] hover:text-[#1F1D1A] hover:bg-[#FAF8F4]"
+        >
+          {item.label}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
+export function AppShell({ children }: AppShellProps) {
   return (
     <div className="min-h-screen bg-[#FAF8F4] text-[#1F1D1A] flex flex-col font-sans">
       {/* Accessible skip link */}
@@ -54,32 +103,9 @@ export function AppShell({ children }: AppShellProps) {
 
           {/* Primary Navigation & Backend Status */}
           <div className="flex items-center gap-2 sm:gap-3">
-            <nav
-              aria-label="Main Navigation"
-              className="flex items-center gap-1 sm:gap-2"
-            >
-              {navItems.map((item) => {
-                const isActive =
-                  item.href === "/"
-                    ? pathname === "/"
-                    : pathname?.startsWith(item.href);
-
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    aria-current={isActive ? "page" : undefined}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-[#1F1D1A] focus-visible:outline-offset-2 ${
-                      isActive
-                        ? "bg-[#1F1D1A] !text-[#FFFFFF]"
-                        : "text-[#6B665C] hover:text-[#1F1D1A] hover:bg-[#FAF8F4]"
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </nav>
+            <Suspense fallback={<NavLinksFallback />}>
+              <NavLinks />
+            </Suspense>
 
             <div className="h-4 w-[1px] bg-[#E5E1D8] hidden sm:block" aria-hidden="true" />
 

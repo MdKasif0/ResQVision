@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
+const sansFont = localFont({
+  src: "./fonts/SFPro.ttf",
+  variable: "--font-geometric",
   display: "swap",
 });
 
@@ -20,8 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={inter.variable}>
-      <body className="bg-[#0A0D14] text-white min-h-screen antialiased selection:bg-red-500/30 selection:text-white">
+    <html lang="en" className={sansFont.variable}>
+      <body className="bg-[#FAF8F4] text-[#1F1D1A] min-h-screen antialiased selection:bg-[#1F1D1A] selection:text-[#FAF8F4]">
         {children}
       </body>
     </html>

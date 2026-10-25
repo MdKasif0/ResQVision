@@ -165,6 +165,19 @@ def test_trim_cap_to_50_incidents():
         assert (uploads_dir / f"{kept_id}.jpg").exists()
 
 
+def test_missing_file_creates_empty_file(setup_test_store):
+    """Verify that if incidents.json is missing, it is automatically created as an empty JSON list."""
+    incidents_path = get_incidents_file_path()
+    if incidents_path.exists():
+        incidents_path.unlink()
+    assert not incidents_path.exists()
+
+    incidents = list_incidents()
+    assert incidents == []
+    assert incidents_path.exists()
+    assert json.loads(incidents_path.read_text(encoding="utf-8")) == []
+
+
 def test_corrupt_file_recovery(setup_test_store):
     """Verify that a corrupt incidents.json does not crash the server and renames to incidents.corrupt.<timestamp>.json."""
     incidents_path = get_incidents_file_path()

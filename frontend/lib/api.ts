@@ -1,11 +1,10 @@
 import type {
   ApiErrorResponse,
-  Assessment,
   DetectResponse,
   HealthResponse,
   Incident,
   IncidentListItem,
-  SceneFeatures,
+  SampleItem,
 } from "./types";
 
 const API_BASE_URL =
@@ -99,24 +98,86 @@ export const api = {
 
   /**
    * End-to-end incident analysis: vision, features, and evidentiary assessment (POST /api/analyze)
+   * Tracks real network phases without artificial delays.
    */
-  async analyze(params: {
-    file: File;
-    note?: string;
-    location_label?: string;
-    lat?: number;
-    lng?: number;
-  }): Promise<Incident> {
+  async analyze(
+    params: {
+      file: File;
+      note?: string;
+      location_label?: string;
+      lat?: number;
+      lng?: number;
+      origin?: string;
+    },
+    onPhaseChange?: (phase: "uploading" | "analyzing" | "done") => void
+  ): Promise<Incident> {
     const formData = new FormData();
     formData.append("file", params.file);
     if (params.note) formData.append("note", params.note);
     if (params.location_label) formData.append("location_label", params.location_label);
     if (params.lat !== undefined) formData.append("lat", String(params.lat));
     if (params.lng !== undefined) formData.append("lng", String(params.lng));
+    if (params.origin) formData.append("origin", params.origin);
 
-    return request<Incident>("/api/analyze", {
-      method: "POST",
-      body: formData,
+    onPhaseChange?.("uploading");
+
+    return new Promise<Incident>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", `${API_BASE_URL}/api/analyze`);
+
+      // Track real upload completion
+      if (xhr.upload) {
+        xhr.upload.onload = () => {
+          onPhaseChange?.("analyzing");
+        };
+      }
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const data = JSON.parse(xhr.responseText) as Incident;
+            onPhaseChange?.("done");
+            resolve(data);
+          } catch {
+            reject(
+              new ApiClientError(
+                "Invalid JSON response from server",
+                "PARSE_ERROR",
+                xhr.status
+              )
+            );
+          }
+        } else {
+          let code = "HTTP_ERROR";
+          let message = `Request failed with status ${xhr.status}`;
+          try {
+            const errJson = JSON.parse(xhr.responseText) as ApiErrorResponse;
+            if (errJson && errJson.error) {
+              code = errJson.error.code || code;
+              message = errJson.error.message || message;
+            }
+          } catch {
+            // response was not JSON
+          }
+          reject(new ApiClientError(message, code, xhr.status));
+        }
+      };
+
+      xhr.onerror = () => {
+        reject(
+          new ApiClientError(
+            "Network error or server unreachable",
+            "CONNECTION_ERROR",
+            0
+          )
+        );
+      };
+
+      xhr.ontimeout = () => {
+        reject(new ApiClientError("Request timed out", "TIMEOUT", 0));
+      };
+
+      xhr.send(formData);
     });
   },
 
@@ -156,5 +217,40 @@ export const api = {
    */
   getIncidentImageUrl(id: string): string {
     return `${API_BASE_URL}/api/incidents/${encodeURIComponent(id)}/image`;
+  },
+
+  /**
+   * List available benchmark evaluation samples (GET /api/samples)
+   */
+  async listSamples(): Promise<SampleItem[]> {
+    return request<SampleItem[]>("/api/samples");
+  },
+
+  /**
+   * Run real pipeline on a benchmark sample image (POST /api/samples/{id}/load)
+   */
+  async loadSample(sampleId: string): Promise<Incident> {
+    return request<Incident>(`/api/samples/${encodeURIComponent(sampleId)}/load`, {
+      method: "POST",
+    });
+  },
+
+  /**
+   * Resolve full image streaming URL for a benchmark sample
+   */
+  getSampleImageUrl(sampleId: string): string {
+    return `${API_BASE_URL}/api/samples/${encodeURIComponent(sampleId)}/image`;
+  },
+
+  /**
+   * Transcribe recorded audio note using backend Groq whisper endpoint (POST /api/transcribe)
+   */
+  async transcribeAudio(audioBlob: Blob): Promise<{ text: string }> {
+    const formData = new FormData();
+    formData.append("file", audioBlob, "voice_note.webm");
+    return request<{ text: string }>("/api/transcribe", {
+      method: "POST",
+      body: formData,
+    });
   },
 };
